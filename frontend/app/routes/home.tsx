@@ -1,6 +1,6 @@
 import { EventList } from "~/components/event-list";
 import type { Route } from "./+types/home";
-import { DATA_URL } from "~/lib/data";
+import { fetchEvents } from "~/lib/data";
 import { EventsOverview } from "~/components/events-overview";
 
 export function meta({}: Route.MetaArgs) {
@@ -13,8 +13,7 @@ export function meta({}: Route.MetaArgs) {
 export async function clientLoader({
   params,
 }: Route.ClientLoaderArgs) {
-  const res = await fetch(DATA_URL);
-  const events = await res.json();
+  const events = await fetchEvents();
   return { events };
 }
 

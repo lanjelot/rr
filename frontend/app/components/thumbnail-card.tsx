@@ -6,7 +6,7 @@ export function ThumbnailCard({ event }: { event: Event; }) {
 
   return (
     <Link to={`/events/${event.id}`}>
-      <div className="w-full flex flex-col gap-2 border rounded-xl overflow-hidden cursor-pointer">
+      <div className="w-full flex flex-col gap-2 border rounded-xl overflow-hidden cursor-pointer hover:bg-zinc-300 dark:hover:bg-white/10">
         <img
           src={event.flyer}
           alt=""

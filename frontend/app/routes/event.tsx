@@ -1,7 +1,7 @@
 import { redirect } from "react-router";
 import { EventList } from "~/components/event-list";
 import type { Route } from "./+types/event";
-import { DATA_URL, type Event } from "~/lib/data";
+import { fetchEvent } from "~/lib/data";
 import { EventDetails } from "~/components/event-details";
 
 export function meta({}: Route.MetaArgs) {
@@ -14,9 +14,7 @@ export function meta({}: Route.MetaArgs) {
 export async function clientLoader({
   params,
 }: Route.ClientLoaderArgs) {
-  const res = await fetch(DATA_URL);
-  const events: Event[] = await res.json();
-  const event = events.find((e) => String(e.id) === params.eventId);
+  const event = await fetchEvent(params.eventId);
   if (!event) throw redirect("/events");
   return { event };
 }
