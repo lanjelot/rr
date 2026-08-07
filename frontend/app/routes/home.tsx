@@ -6,7 +6,7 @@ import { EventsOverview } from "~/components/events-overview";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "The Rave Roster" },
-    { name: "description", content: "Welcome to The Rave Roster!" },
+    { name: "description", content: "An event discovery platform for Australian rave/electronic music events" },
   ];
 }
 

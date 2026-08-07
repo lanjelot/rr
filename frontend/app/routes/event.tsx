@@ -7,7 +7,7 @@ import { EventDetails } from "~/components/event-details";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Event Details | The Rave Roster" },
-    { name: "description", content: "Welcome to The Rave Roster!" },
+    { name: "description", content: "Details for this event" },
   ];
 }
 

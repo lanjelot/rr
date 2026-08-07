@@ -5,7 +5,7 @@ import { fetchEvents } from "~/lib/data";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Events | The Rave Roster" },
-    { name: "description", content: "Welcome to The Rave Roster!" },
+    { name: "description", content: "Browse upcoming raves, doofs, and festivals across Australia" },
   ];
 }
 

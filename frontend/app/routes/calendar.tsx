@@ -5,7 +5,7 @@ import { useTheme } from "~/contexts/theme-context";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Calendar | The Rave Roster" },
-    { name: "description", content: "Welcome to The Rave Roster!" },
+    { name: "description", content: "The Rave Calendar" },
   ];
 }
 
