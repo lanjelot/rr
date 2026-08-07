@@ -1,4 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
+import { useSearchParams } from "react-router";
+import { REGIONS } from "~/lib/data";
 
 const DEFAULT_REGIONS = ["QLD", "NNSW"];
 
@@ -21,11 +23,33 @@ function loadSelectedRegions(): string[] {
   }
 }
 
+function parseRegionParam(param: string | null): string[] | null {
+  if (!param) return null;
+  const regions = param
+    .split(",")
+    .map((r) => r.trim().toUpperCase())
+    .filter((r) => REGIONS.includes(r));
+  return regions.length > 0 ? regions : null;
+}
+
 export function RegionProvider({ children }: { children: React.ReactNode }) {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedRegions, setSelectedRegions] = useState<string[]>(DEFAULT_REGIONS);
 
   useEffect(() => {
-    setSelectedRegions(loadSelectedRegions());
+    const fromQuery = parseRegionParam(searchParams.get("region"));
+    setSelectedRegions(fromQuery ?? loadSelectedRegions());
+
+    if (fromQuery) {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete("region");
+          return next;
+        },
+        { replace: true }
+      );
+    }
   }, []);
 
   useEffect(() => {

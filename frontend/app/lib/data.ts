@@ -38,8 +38,8 @@ export async function fetchEvent(id: string): Promise<Event | undefined> {
 export type Event = {
   id: number;
   name: string;
-  region: string;
   zone: string;
+  region: string;
   state: string;
   start_at: string;
   finish_at: string;
@@ -51,7 +51,6 @@ export type Event = {
   venue?: string;
   genre?: string;
   ticket?: string;
-  notes?: string;
 }
 
 export const REGIONS = ["NQLD", "QLD", "NNSW", "NSW", "ACT", "VIC", "TAS", "SA", "WA", "NT"];

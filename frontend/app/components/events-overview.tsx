@@ -4,6 +4,37 @@ import { EventCompact } from "./event-compact";
 import { useRegion } from "~/contexts/region-context";
 import moment from 'moment';
 
+function groupEventsByDay(events: Event[]) {
+  const groups: { day: string; events: Event[]; }[] = [];
+
+  for (const event of events) {
+    const day = moment.parseZone(event.start_at).format("YYYY-MM-DD");
+    const lastGroup = groups[groups.length - 1];
+
+    if (lastGroup?.day === day) {
+      lastGroup.events.push(event);
+    } else {
+      groups.push({ day, events: [event] });
+    }
+  }
+
+  return groups;
+}
+
+function EventList({ events }: { events: Event[]; }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {groupEventsByDay(events).map(group => (
+        <div key={group.day} className="flex flex-col gap-1">
+          {group.events.map((event: Event) => (
+            <EventCompact key={event.id} event={event} />
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function getWeekLabel(events: Event[], fallbackStart: moment.Moment, end: moment.Moment) {
   const start =
     events.length > 0
@@ -43,11 +74,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
         </div>
 
         {thisWeek.length > 0 ? (
-          <div className="flex flex-col gap-1">
-            {thisWeek.map((event: Event) => (
-              <EventCompact key={event.id} event={event} />
-            ))}
-          </div>
+          <EventList events={thisWeek} />
         ) : (
           <div className="text-center">... nothing yet 🤞 stay tuned ...</div>
         )}
@@ -63,11 +90,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
 
 
         {nextWeek.length > 0 ? (
-          <div className="flex flex-col gap-1">
-            {nextWeek.map((event: Event) => (
-              <EventCompact key={event.id} event={event} />
-            ))}
-          </div>
+          <EventList events={nextWeek} />
         ) : (
           <div className="text-center">... nothing yet 🤞 stay tuned ...</div>
         )}
