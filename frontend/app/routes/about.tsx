@@ -49,7 +49,7 @@ export default function About() {
           </a> or scan below:
         </p>
         <img
-          src="/public/raveroster/qr_code.png"
+          src="/raveroster/qr_code.png"
           alt="WhatsApp QR code"
           className="h-48 mx-auto"
         />
