@@ -73,7 +73,7 @@ export function eventDay(
 }
 
 export function formatTime(date: string, suffix: string = ""): string {
-  const fmt = moment(date).minutes() === 0 ? "ha" : "h:mma";
+  const fmt = moment.parseZone(date).minutes() === 0 ? "ha" : "h:mma";
   return formatDate(date, `${fmt}${suffix}`);
 }
 
