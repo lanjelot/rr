@@ -38,7 +38,7 @@ function EventList({ events }: { events: Event[]; }) {
 function getWeekLabel(events: Event[], fallbackStart: moment.Moment, end: moment.Moment) {
   const start =
     events.length > 0
-      ? moment.min(events.map(event => moment(event.start_at)))
+      ? moment.min(events.map(event => moment.parseZone(event.start_at)))
       : fallbackStart;
 
   return `${start.format("ddd D")} - ${end.format("ddd D MMM YYYY")}`;
@@ -66,7 +66,6 @@ export function EventsOverview({ events }: { events: Event[]; }) {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* <h1 className="font-semibold text-xl text-center">🎉 Raves in Australia 🦘</h1> */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-row gap-3 justify-between items-center">
           <div className="font-semibold">✦ This weekend</div>
@@ -79,8 +78,6 @@ export function EventsOverview({ events }: { events: Event[]; }) {
           <div className="text-center">... nothing yet 🤞 stay tuned ...</div>
         )}
       </div>
-
-      {/* <hr className="mx-auto w-[256px] my-3" /> */}
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-row gap-3 justify-between items-center">

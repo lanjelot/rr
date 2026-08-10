@@ -1,35 +1,67 @@
 import { useState } from "react";
 import type { Route } from "./+types/calendar";
-import { useTheme } from "~/contexts/theme-context";
+import { fetchEvents } from "~/lib/data";
+import { CalendarView } from "~/components/calendar-view";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "~/components/ui/breadcrumb";
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
+import { CalendarIcon } from "@heroicons/react/24/outline";
+import { GoogleCalendarView } from "~/components/calendar-view-google";
 
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Calendar | The Rave Roster" },
-    { name: "description", content: "The Rave Calendar" },
+    { name: "description", content: "Browse upcoming raves, doofs, and festivals by date" },
   ];
 }
 
-export default function Calendar() {
-  const [loading, setLoading] = useState(true);
-  const { isDark } = useTheme();
+export async function clientLoader({
+  params,
+}: Route.ClientLoaderArgs) {
+  const events = await fetchEvents();
+  return { events };
+}
+
+type ViewMode = "tabs" | "google" ;
+
+export default function Calendar({
+  loaderData,
+}: Route.ComponentProps) {
+  const { events } = loaderData;
+  const [viewMode, setViewMode] = useState<ViewMode>("tabs");
 
   return (
-    <div className="p-3">
-      {loading && (
-        <div className="flex items-center justify-center">
-          <div className="w-10 h-10 border-4 border-muted border-t-primary rounded-full animate-spin" />
-        </div>
-      )}
-      <iframe
-        src="https://calendar.google.com/calendar/embed?src=theraveroster%40gmail.com&ctz=Australia%2FSydney&wkst=2"
-        className="w-full"
-        style={{
-          height: 'calc(100vh - 150px)',
-          ...(isDark && { filter: 'invert(1) hue-rotate(180deg)' }),
-        }}
-        onLoad={() => setLoading(false)}
-      ></iframe>
+    <div className="flex flex-col gap-3">
+
+      <div className="flex justify-between">
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href="/">Home</BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Calendar</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
+
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          value={viewMode}
+          onValueChange={(value) => value && setViewMode(value as ViewMode)}
+        >
+          <ToggleGroupItem value="tabs" aria-label="Tabs view">
+            <CalendarIcon className="size-4" />
+          </ToggleGroupItem>
+          <ToggleGroupItem value="google" aria-label="Google view">
+            <img src="/raveroster/google-calendar.svg" alt="Google" className="size-4" />
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      {viewMode === "google" ? <GoogleCalendarView /> : <CalendarView events={events} />}
     </div>
   );
 }
-
