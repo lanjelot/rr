@@ -1,5 +1,5 @@
 import { type Event } from "~/lib/data";
-import { eventDay, eventTime } from "~/lib/utils";
+import { eventDay, eventTime, isMultiDay } from "~/lib/utils";
 import { Link } from "react-router";
 
 
@@ -22,9 +22,6 @@ export function EventCompact({ event }: { event: Event; }) {
             <div className="flex flex-row gap-1 leading-none font-medium">
               <span>✧</span>
               <span>{event.name}</span>
-            </div>
-            <div className="text-sm text-nowrap text-muted-foreground">
-              {eventDay(event)}
             </div>
           </div>
           <ul className="text-muted-foreground text-xs">
