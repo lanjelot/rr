@@ -179,28 +179,17 @@ function dayLabel(day: string): string {
   return moment(day).format("dddd D MMMM");
 }
 
-type Tab = {
+type WeekTab = {
   key: string;
   label: string;
   groups: DayGroup[];
 };
 
-function groupDayGroupsBy(
-  dayGroups: DayGroup[],
-  keyFn: (day: string) => string,
-  labelFn: (key: string) => string
-): Tab[] {
-  const map = new Map<string, DayGroup[]>();
-
-  for (const group of dayGroups) {
-    const key = keyFn(group.day);
-    map.set(key, [...(map.get(key) ?? []), group]);
-  }
-
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, groups]) => ({ key, label: labelFn(key), groups }));
-}
+type MonthTab = {
+  key: string;
+  label: string;
+  weeks: WeekTab[];
+};
 
 function monthKey(day: string): string {
   return moment(day).startOf("month").format("YYYY-MM-DD");
@@ -208,10 +197,6 @@ function monthKey(day: string): string {
 
 function monthLabel(monthStart: string): string {
   return moment(monthStart).format("MMM YYYY");
-}
-
-function groupByMonth(dayGroups: DayGroup[]): Tab[] {
-  return groupDayGroupsBy(dayGroups, monthKey, monthLabel);
 }
 
 // Weeks run Tuesday to Tuesday, not Monday to Sunday.
@@ -230,8 +215,34 @@ function weekLabel(weekStart: string): string {
   return `Fri ${friday.format(sameMonth ? "D" : "D MMM")} - Sun ${sunday.format("D")}`;
 }
 
-function groupByWeek(dayGroups: DayGroup[]): Tab[] {
-  return groupDayGroupsBy(dayGroups, weekKey, weekLabel);
+function groupByWeek(dayGroups: DayGroup[]): WeekTab[] {
+  const map = new Map<string, DayGroup[]>();
+
+  for (const group of dayGroups) {
+    const key = weekKey(group.day);
+    map.set(key, [...(map.get(key) ?? []), group]);
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, groups]) => ({ key, label: weekLabel(key), groups }));
+}
+
+// Months are built out of whole weeks, so a week that straddles two months shows up
+// under both month tabs rather than having its days split between them.
+function groupByMonth(weeks: WeekTab[]): MonthTab[] {
+  const map = new Map<string, WeekTab[]>();
+
+  for (const week of weeks) {
+    const keys = new Set(week.groups.map((group) => monthKey(group.day)));
+    for (const key of keys) {
+      map.set(key, [...(map.get(key) ?? []), week]);
+    }
+  }
+
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([key, monthWeeks]) => ({ key, label: monthLabel(key), weeks: monthWeeks }));
 }
 
 function DayCard({ group, today }: { group: DayGroup; today: string }) {
@@ -292,7 +303,7 @@ function TabRow({
   activeKey,
   onSelect,
 }: {
-  tabs: Tab[];
+  tabs: { key: string; label: string }[];
   activeKey: string;
   onSelect: (key: string) => void;
 }) {
@@ -331,7 +342,8 @@ export function CalendarView({ events }: { events: Event[]; }) {
   );
 
   const dayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
-  const months = useMemo(() => groupByMonth(dayGroups), [dayGroups]);
+  const weeks = useMemo(() => groupByWeek(dayGroups), [dayGroups]);
+  const months = useMemo(() => groupByMonth(weeks), [weeks]);
 
   if (months.length === 0) {
     return (
@@ -342,8 +354,8 @@ export function CalendarView({ events }: { events: Event[]; }) {
   }
 
   const currentMonth = months.find((month) => month.key === activeMonth) ?? months[0];
-  const weeks = groupByWeek(currentMonth.groups);
-  const currentWeek = weeks.find((week) => week.key === activeWeek) ?? weeks[0];
+  const currentWeek =
+    currentMonth.weeks.find((week) => week.key === activeWeek) ?? currentMonth.weeks[0];
 
   // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
   const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
@@ -351,7 +363,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
   return (
     <div className="flex flex-col gap-3">
       <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <TabRow tabs={weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (

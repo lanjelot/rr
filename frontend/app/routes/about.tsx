@@ -22,7 +22,7 @@ export default function About() {
         </p>
 
         <ul className="list-disc pl-6">
-          <li>Ticketing sites (Humanitix, Moshtix, Triniq etc.)</li>
+          <li>Ticketing sites (Humanitix, Eventbrite etc.)</li>
           <li>
             <a href="https://chat.whatsapp.com/IpCM00onsZrJMpNWCG6lYU"
               target="_blank"
