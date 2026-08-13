@@ -10,7 +10,7 @@ import { GoogleCalendarView } from "~/components/calendar-view-google";
 export function meta({}: Route.MetaArgs) {
   return [
     { title: "Calendar | The Rave Roster" },
-    { name: "description", content: "Browse upcoming raves, doofs, and festivals by date" },
+    { name: "description", content: "Browse upcoming events by date" },
   ];
 }
 

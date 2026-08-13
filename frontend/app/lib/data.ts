@@ -51,6 +51,8 @@ export type Event = {
   venue?: string;
   genre?: string;
   ticket?: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export const REGIONS = ["NQLD", "QLD", "NNSW", "NSW", "ACT", "VIC", "TAS", "SA", "WA", "NT"];

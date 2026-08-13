@@ -7,6 +7,7 @@ export default [
         // route("archive/", "routes/archive.tsx"),
         route("events/:eventId", "routes/event.tsx"),
         route("calendar/", "routes/calendar.tsx"),
+        route("map/", "routes/map.tsx"),
         route("about/", "routes/about.tsx"),
         // route("editor/", "routes/editor.tsx"),
     ]),

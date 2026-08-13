@@ -1,6 +1,6 @@
 import { Outlet } from "react-router";
 import type { Route } from "./+types/main-and-footer";
-import { BeakerIcon, CalendarDaysIcon, HomeIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
+import { BeakerIcon, CalendarDaysIcon, HomeIcon, InformationCircleIcon, MapIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
 import { FooterNavLink } from "~/components/footer-nav-link";
 import { ThemeToggle } from "~/components/theme-toggle";
@@ -59,6 +59,11 @@ export default function Component(_: Route.ComponentProps) {
                 to="/calendar"
                 label="Calendar"
                 icon={<CalendarDaysIcon className="size-5" />}
+              />
+              <FooterNavLink
+                to="/map"
+                label="Map"
+                icon={<MapIcon className="size-5" />}
               />
               <FooterNavLink
                 to="/about"
