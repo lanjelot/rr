@@ -47,7 +47,7 @@ export type Event = {
   promoter?: string;
   artists?: string;
   djs?: string;
-  location?: string;
+  location: string;
   venue?: string;
   genre?: string;
   ticket?: string;

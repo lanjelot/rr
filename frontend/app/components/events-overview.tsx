@@ -24,10 +24,10 @@ function groupEventsByDay(events: Event[]) {
 
 function EventList({ events }: { events: Event[]; }) {
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {groupEventsByDay(events).map(group => (
         <div key={group.day} className="flex flex-col gap-1">
-          <div className="text-muted-foreground text-sm text-end">
+          <div className="text-muted-foreground text-end">
             {moment(group.day, "YYYY-MM-DD").format("ddd D MMM")}
           </div>
           {group.events.map((event: Event) => (
@@ -48,7 +48,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
   const nextWeek = regionEvents.filter((event: Event) => isNextWeek(event));
 
   return (
-    <Tabs defaultValue="this-weekend" className="gap-3">
+    <Tabs defaultValue="this-weekend" className="gap-0">
       <TabsList variant="line">
         <TabsTrigger value="this-weekend">This weekend</TabsTrigger>
         <TabsTrigger value="next-weekend">Next weekend</TabsTrigger>

@@ -16,10 +16,14 @@ export function EventList({ events }: { events: Event[]; }) {
   const [searchText, setSearchText] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("thumbnail");
 
+  const normalizedSearchText = searchText.trim().toLowerCase();
+
   const filteredEvents = events.filter((event: Event) =>
     selectedRegions.includes(event.region) &&
     isFutureEvent(event) &&
-    (searchText === "" || event.name.toLowerCase().includes(searchText.toLowerCase()))
+    (normalizedSearchText === "" ||
+      event.name.toLowerCase().includes(normalizedSearchText) ||
+      event.location.toLowerCase().includes(normalizedSearchText))
   );
 
   return (
