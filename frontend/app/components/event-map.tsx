@@ -40,11 +40,21 @@ export function EventMap({ events }: { events: Event[] }) {
     return day >= dayRange[0] && day <= dayRange[1];
   });
 
+  const groups = useMemo(() => {
+    const byLocation = new Map<string, typeof visible>();
+    for (const event of visible) {
+      const key = `${event.latitude.toFixed(3)},${event.longitude.toFixed(3)}`;
+      const group = byLocation.get(key);
+      if (group) group.push(event);
+      else byLocation.set(key, [event]);
+    }
+    return [...byLocation.values()];
+  }, [visible]);
+
   return (
     <div className="flex flex-col gap-4">
       {maxDay > 0 && (
         <div className="flex flex-col gap-2">
-          {/* <label className="text-sm font-medium">Date Range</label> */}
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="slider-date-range">Date Range</Label>
             <span className="text-sm text-muted-foreground">
@@ -74,20 +84,46 @@ export function EventMap({ events }: { events: Event[] }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {visible.map((event) => (
+        {groups.map((group) => (
           <CircleMarker
-            key={event.id}
-            center={[event.latitude, event.longitude]}
+            key={group[0].id}
+            center={[group[0].latitude, group[0].longitude]}
             radius={6}
             pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.8 }}
           >
             <Popup>
-              <Link to={`/events/${event.id}`} className="flex flex-col gap-1 w-36" style={{ color: "inherit" }}>
-                <img src={event.flyer} alt="" className="object-cover aspect-square w-full rounded" />
-                <div className="font-semibold leading-tight">{event.name}</div>
-                <div className="text-xs">{event.venue || event.location}</div>
-                <div className="text-xs">{eventDate(event)}</div>
-              </Link>
+              {group.length === 1 ? (
+                <Link
+                  to={`/events/${group[0].id}`}
+                  className="flex items-center gap-2 w-40"
+                  style={{ color: "inherit" }}
+                >
+                  <img src={group[0].flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+                  <div className="flex flex-col leading-tight overflow-hidden">
+                    <div className="font-semibold truncate">{group[0].name}</div>
+                    <div className="text-xs">{group[0].venue || group[0].location}</div>
+                    <div className="text-xs truncate">{eventDate(group[0])}</div>
+                  </div>
+                </Link>
+              ) : (
+                <div className="flex flex-col gap-2 w-40 max-h-80 overflow-y-auto">
+                  {group.map((event) => (
+                    <Link
+                      key={event.id}
+                      to={`/events/${event.id}`}
+                      className="flex items-center gap-2"
+                      style={{ color: "inherit" }}
+                    >
+                      <img src={event.flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+                      <div className="flex flex-col leading-tight overflow-hidden">
+                        <div className="font-semibold truncate">{event.name}</div>
+                        <div className="text-xs">{group[0].venue || group[0].location}</div>
+                        <div className="text-xs truncate">{eventDate(event)}</div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </Popup>
           </CircleMarker>
         ))}
