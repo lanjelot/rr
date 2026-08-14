@@ -141,7 +141,7 @@ body {
 }
 
 .leaflet-popup-content {
-  margin: 10px 10px 10px 10px !important;
+  margin: 8px 10px !important;
 }
 
 /* Rave background — static radial glow */

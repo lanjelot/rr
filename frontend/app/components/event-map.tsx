@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from "react-leaflet";
 import { Link } from "react-router";
 import moment from "moment";
 import "leaflet/dist/leaflet.css";
@@ -85,11 +85,9 @@ export function EventMap({ events }: { events: Event[] }) {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {groups.map((group) => (
-          <CircleMarker
+          <Marker
             key={group[0].id}
-            center={[group[0].latitude, group[0].longitude]}
-            radius={6}
-            pathOptions={{ color: "#f97316", fillColor: "#f97316", fillOpacity: 0.8 }}
+            position={[group[0].latitude, group[0].longitude]}
           >
             <Popup>
               {group.length === 1 ? (
@@ -125,7 +123,7 @@ export function EventMap({ events }: { events: Event[] }) {
                 </div>
               )}
             </Popup>
-          </CircleMarker>
+          </Marker>
         ))}
       </MapContainer>
     </div>
