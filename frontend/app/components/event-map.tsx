@@ -2,11 +2,24 @@ import { useMemo, useState } from "react";
 import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from "react-leaflet";
 import { Link } from "react-router";
 import moment from "moment";
+import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import type { Event } from "~/lib/data";
 import { eventDate } from "~/lib/utils";
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
+
+// Leaflet's default marker icon resolves its image URLs relative to its own
+// bundled location, which breaks once Vite hashes/moves assets in production.
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: markerIcon2x,
+  iconUrl: markerIcon,
+  shadowUrl: markerShadow,
+});
 
 const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
