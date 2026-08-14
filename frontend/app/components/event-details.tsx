@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 import { useFlyerOverlay, FlyerOverlay } from "../hooks/flyer-overlay";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { TicketLink } from "./ticket-link";
+import { EventLocationMap } from "./event-location-map";
 
 
 export function EventDetails({ event }: { event: Event; }) {
@@ -82,6 +83,9 @@ export function EventDetails({ event }: { event: Event; }) {
             {/* {event.notes && (
               <div>✨ {renderTextWithLinksAndBreaks(event.notes)}</div>
             )} */}
+            {typeof event.latitude === "number" && typeof event.longitude === "number" && (
+              <EventLocationMap latitude={event.latitude} longitude={event.longitude} />
+            )}
           </div>
         </div >
       </div>
