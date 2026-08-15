@@ -164,7 +164,8 @@ function EventBar({ event, startMin, endMin }: DayItem) {
           />
           <div className="flex flex-col min-w-0 leading-tight">
             <span className="text-xs font-medium truncate">{event.name}</span>
-            <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span>
+            {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
+            <span className="text-[11px] text-muted-foreground truncate">{event.location}</span>
           </div>
         </button>
       </DialogTrigger>
