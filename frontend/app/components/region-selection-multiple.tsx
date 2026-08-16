@@ -1,14 +1,15 @@
 import { MapPinIcon } from "@heroicons/react/24/outline";
-import { CheckIcon } from "lucide-react";
+import { CheckIcon, RotateCcwIcon } from "lucide-react";
 import { useState } from "react";
-
 import { Button } from "~/components/ui/button";
 import {
   Popover,
   PopoverContent,
+  PopoverHeader,
   PopoverTrigger,
 } from "~/components/ui/popover";
 import { REGIONS, regionLabel } from "~/lib/data";
+import { Separator } from "./ui/separator";
 
 function triggerLabel(selectedRegions: string[]): string {
   if (selectedRegions.length === 0) return "Select states";
@@ -44,7 +45,7 @@ export function RegionSelection({
           <MapPinIcon className="size-5" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-40 p-1">
+      <PopoverContent className="w-40 p-1 gap-1">
         {REGIONS.map((region) => {
           const isSelected = selectedRegions.includes(region);
           return (
@@ -60,15 +61,27 @@ export function RegionSelection({
             </Button>
           );
         })}
-        {selectedRegions.length > 0 && (
+        <Separator orientation="horizontal" />
+        <div className="flex gap-1">
           <Button
             variant="ghost"
-            className="w-full justify-start text-muted-foreground"
+            disabled={selectedRegions.length === REGIONS.length}
+            className="flex-auto justify-start text-muted-foreground flex gap-1 justify-between"
+            onClick={() => onSelectedRegions(REGIONS)}
+          >
+            <span className="">All</span>
+            <CheckIcon className="size-4"/>
+          </Button>
+          <Button
+            variant="ghost"
+            disabled={selectedRegions.length === 0}
+            className="flex-auto justify-start text-muted-foreground flex gap-1 justify-between"
             onClick={() => onSelectedRegions([])}
           >
-            Clear selection
+            <span className="">Clear</span>
+            <RotateCcwIcon className="size-4" />
           </Button>
-        )}
+        </div>
       </PopoverContent>
     </Popover>
   );
