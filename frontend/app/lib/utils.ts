@@ -24,7 +24,6 @@ export function formatDate(
 export function isFutureEvent(
   event: Event
 ): boolean {
-  // return true;
   return moment().isSameOrBefore(moment(event.finish_at));
 }
 

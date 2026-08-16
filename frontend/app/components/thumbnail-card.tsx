@@ -1,6 +1,14 @@
 import type { Event } from "~/lib/data";
-import { formatDate, formatTime } from "~/lib/utils";
+import { formatDate, formatTime, isMultiDay } from "~/lib/utils";
 import { Link } from "react-router";
+
+function eventDateTime(
+  event: Event
+): string {
+  if (!isMultiDay(event)) return `${formatDate(event.start_at)} · ${formatTime(event.start_at)} - ${formatTime(event.finish_at)}`;
+
+  return `${formatDate(event.start_at, "ddd D MMM")} - ${formatDate(event.finish_at, "ddd D MMM")}`;
+}
 
 export function ThumbnailCard({ event }: { event: Event; }) {
 
@@ -15,7 +23,7 @@ export function ThumbnailCard({ event }: { event: Event; }) {
         <div className="px-3 pb-3 text-sm">
           <div className="font-medium truncate">{event.name}</div>
           <div className="text-muted-foreground text-xs mt-1">
-            <div>{formatDate(event.start_at)} · {formatTime(event.start_at)}</div>
+            <div>{eventDateTime(event)}</div>
             <div className="truncate">{event.location}</div>
           </div>
         </div>
