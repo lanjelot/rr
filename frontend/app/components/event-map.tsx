@@ -59,16 +59,16 @@ export function EventMap({ events }: { events: Event[] }) {
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="slider-date-range">Date Range</Label>
             <span className="text-sm text-muted-foreground">
-              {moment(now + dayRange[0] * DAY_MS).format("D MMM YYYY")}
+              {moment(now + dayRange[0] * DAY_MS).format("ddd D MMM YYYY")}
               {" – "}
-              {moment(now + dayRange[1] * DAY_MS).format("D MMM YYYY")}
+              {moment(now + dayRange[1] * DAY_MS).format("ddd D MMM YYYY")}
             </span>
           </div>
           <Slider
             id="slider-date-range"
             min={0}
             max={maxDay}
-            step={1}
+            step={7}
             value={dayRange}
             onValueChange={(value) => setDayRange(value as [number, number])}
           />
