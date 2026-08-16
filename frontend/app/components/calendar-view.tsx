@@ -13,6 +13,8 @@ const WINDOW_START_HOUR = 10;
 const WINDOW_MINUTES = 20 * 60;
 const HOUR_MARKS = [12, 18, 0];
 const MAX_EVENT_DAYS = 21;
+// Bars thinner than this are unreadable, so give every event at least this much width.
+const MIN_BAR_MINUTES = 30;
 
 function hourMarkLabel(hour: number): string {
   if (hour === 0 || hour === 24) return "12am";
@@ -58,35 +60,57 @@ function eventShowDays(event: Event): string[] {
   return days;
 }
 
+function dayWindowStart(day: string): moment.Moment {
+  return moment(day, "YYYY-MM-DD").startOf("day").add(WINDOW_START_HOUR, "hours");
+}
+
+// Clips an event to a day's window, or returns null when it doesn't actually overlap it.
+// An event finishing at exactly 10am, or starting at exactly 6am, touches the neighbouring
+// day's window without spending any time in it, and would otherwise leave that day empty.
+function clipToDay(event: Event, day: string): DayItem | null {
+  const windowStart = dayWindowStart(day);
+  const startMin = Math.max(0, moment.parseZone(event.start_at).diff(windowStart, "minutes"));
+  const endMin = Math.min(
+    WINDOW_MINUTES,
+    moment.parseZone(event.finish_at).diff(windowStart, "minutes")
+  );
+
+  if (endMin <= startMin || startMin >= WINDOW_MINUTES) return null;
+
+  return { event, startMin, endMin: Math.min(WINDOW_MINUTES, Math.max(endMin, startMin + MIN_BAR_MINUTES)) };
+}
+
+// Events landing entirely in the 6am-10am gap between windows still need a home, so pin
+// them to the end of their show day rather than dropping them off the calendar.
+function fallbackItem(event: Event): DayItem {
+  return { event, startMin: Math.max(0, WINDOW_MINUTES - MIN_BAR_MINUTES), endMin: WINDOW_MINUTES };
+}
+
 function buildDayGroups(events: Event[]): DayGroup[] {
-  const eventDays = new Map<number, string[]>();
-  const allDays = new Set<string>();
+  const dayItems = new Map<string, DayItem[]>();
+
+  const add = (day: string, item: DayItem) =>
+    dayItems.set(day, [...(dayItems.get(day) ?? []), item]);
 
   for (const event of events) {
-    const days = eventShowDays(event);
-    eventDays.set(event.id, days);
-    days.forEach((day) => allDays.add(day));
+    const clipped = eventShowDays(event)
+      .map((day) => ({ day, item: clipToDay(event, day) }))
+      .filter(({ item }) => item !== null);
+
+    if (clipped.length === 0) {
+      add(showDay(event.start_at), fallbackItem(event));
+      continue;
+    }
+
+    for (const { day, item } of clipped) add(day, item!);
   }
 
-  const sortedDays = Array.from(allDays).sort();
-
-  return sortedDays.map((day) => {
-    const windowStart = moment(day, "YYYY-MM-DD").startOf("day").add(WINDOW_START_HOUR, "hours");
-
-    const items: DayItem[] = events
-      .filter((event) => eventDays.get(event.id)!.includes(day))
-      .map((event) => {
-        const startMin = Math.max(0, moment.parseZone(event.start_at).diff(windowStart, "minutes"));
-        const endMin = Math.min(
-          WINDOW_MINUTES,
-          moment.parseZone(event.finish_at).diff(windowStart, "minutes")
-        );
-        return { event, startMin, endMin: Math.max(endMin, startMin + 1) };
-      })
-      .sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin);
-
-    return { day, items };
-  });
+  return Array.from(dayItems.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, items]) => ({
+      day,
+      items: items.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin),
+    }));
 }
 
 function EventDetailsCard({ event }: { event: Event }) {
