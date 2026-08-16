@@ -13,12 +13,23 @@ const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-function daysFromNow(startAt: string, now: number) {
-  return Math.floor((new Date(startAt).getTime() - now) / DAY_MS);
+// Days since the epoch for a moment's wall-clock date, so week arithmetic is
+// immune to DST shifts.
+function dayIndex(value: moment.Moment) {
+  return Math.floor(Date.UTC(value.year(), value.month(), value.date()) / DAY_MS);
+}
+
+// start_at carries the event's region offset, so parseZone keeps the event's own
+// date — the one eventDate() displays.
+function eventDayIndex(startAt: string) {
+  return dayIndex(moment.parseZone(startAt));
 }
 
 export function EventMap({ events }: { events: Event[] }) {
-  const now = useMemo(() => Date.now(), []);
+  // Anchor the slider on the Monday of the current week so every step lands on a
+  // Mon–Sun week boundary.
+  const monday = useMemo(() => moment().startOf("isoWeek"), []);
+  const base = useMemo(() => dayIndex(monday), [monday]);
 
   const located = useMemo(
     () =>
@@ -29,16 +40,21 @@ export function EventMap({ events }: { events: Event[] }) {
     [events]
   );
 
-  const maxDay = useMemo(
-    () => located.reduce((max, event) => Math.max(max, daysFromNow(event.start_at, now)), 0),
-    [located, now]
-  );
+  // Number of days from `base` to the end of the last week containing an event,
+  // always a multiple of 7 so the slider ends on a Sunday.
+  const maxDay = useMemo(() => {
+    const lastDay = located.reduce(
+      (max, event) => Math.max(max, eventDayIndex(event.start_at) - base),
+      0
+    );
+    return (Math.floor(lastDay / 7) + 1) * 7;
+  }, [located, base]);
 
   const [dayRange, setDayRange] = useState<[number, number]>([0, maxDay]);
 
   const visible = located.filter((event) => {
-    const day = daysFromNow(event.start_at, now);
-    return day >= dayRange[0] && day <= dayRange[1];
+    const day = eventDayIndex(event.start_at) - base;
+    return day >= dayRange[0] && day < dayRange[1];
   });
 
   const groups = useMemo(() => {
@@ -54,14 +70,14 @@ export function EventMap({ events }: { events: Event[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {maxDay > 0 && (
+      {maxDay > 7 && (
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between gap-2">
             <Label htmlFor="slider-date-range">Date Range</Label>
             <span className="text-sm text-muted-foreground">
-              {moment(now + dayRange[0] * DAY_MS).format("ddd D MMM YYYY")}
+              {monday.clone().add(dayRange[0], "days").format("ddd D MMM YYYY")}
               {" – "}
-              {moment(now + dayRange[1] * DAY_MS).format("ddd D MMM YYYY")}
+              {monday.clone().add(dayRange[1] - 1, "days").format("ddd D MMM YYYY")}
             </span>
           </div>
           <Slider
@@ -69,6 +85,7 @@ export function EventMap({ events }: { events: Event[] }) {
             min={0}
             max={maxDay}
             step={7}
+            minStepsBetweenThumbs={1}
             value={dayRange}
             onValueChange={(value) => setDayRange(value as [number, number])}
           />
