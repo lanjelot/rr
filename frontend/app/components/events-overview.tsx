@@ -3,6 +3,7 @@ import { isNextWeek, isThisWeek } from "~/lib/utils";
 import { EventCompact } from "./event-compact";
 import { useRegion } from "~/contexts/region-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import { useSearchParams } from "react-router";
 import moment from 'moment';
 
 function groupEventsByDay(events: Event[]) {
@@ -41,6 +42,16 @@ function EventList({ events }: { events: Event[]; }) {
 
 export function EventsOverview({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const tab = searchParams.get("tab") === "next-weekend" ? "next-weekend" : "this-weekend";
+
+  const selectTab = (value: string) => {
+    setSearchParams(params => {
+      params.set("tab", value);
+      return params;
+    }, { replace: true, preventScrollReset: true });
+  };
 
   const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region));
 
@@ -48,7 +59,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
   const nextWeek = regionEvents.filter((event: Event) => isNextWeek(event));
 
   return (
-    <Tabs defaultValue="this-weekend" className="gap-0">
+    <Tabs value={tab} onValueChange={selectTab} className="gap-0">
       <TabsList variant="line">
         <TabsTrigger value="this-weekend">This weekend</TabsTrigger>
         <TabsTrigger value="next-weekend">Next weekend</TabsTrigger>
