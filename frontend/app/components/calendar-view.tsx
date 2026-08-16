@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import moment from "moment";
 import type { Event } from "~/lib/data";
-import { cn, eventDate, eventTime, isFutureEvent, isHappeningNow } from "~/lib/utils";
+import { cn, eventDate, eventTime, isFutureEvent, isHappeningNow, isThisWeek } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { TicketLink } from "./ticket-link";
@@ -337,7 +337,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const filteredEvents = useMemo(
     () =>
       events
-        .filter((event) => selectedRegions.includes(event.region) && isFutureEvent(event))
+        .filter((event) => selectedRegions.includes(event.region) && (isThisWeek(event) || isFutureEvent(event)))
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
     [events, selectedRegions]
   );
