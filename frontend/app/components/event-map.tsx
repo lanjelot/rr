@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, Marker } from "react-leaflet";
+import { useEffect, useMemo, useState } from "react";
+import { MapContainer, TileLayer, CircleMarker, Popup, Marker, useMapEvents } from "react-leaflet";
+import type { LatLngBounds } from "leaflet";
 import { Link } from "react-router";
 import moment from "moment";
 import "leaflet/dist/leaflet.css";
@@ -8,6 +9,7 @@ import type { Event } from "~/lib/data";
 import { eventDate } from "~/lib/utils";
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
+import { ThumbnailCard } from "~/components/thumbnail-card";
 
 const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
@@ -23,6 +25,21 @@ function dayIndex(value: moment.Moment) {
 // date — the one eventDate() displays.
 function eventDayIndex(startAt: string) {
   return dayIndex(moment.parseZone(startAt));
+}
+
+// Reports the map's viewport to the parent whenever panning or zooming settles,
+// so the card list below can be narrowed to what's on screen.
+function BoundsWatcher({ onChange }: { onChange: (bounds: LatLngBounds) => void }) {
+  const map = useMapEvents({
+    moveend: () => onChange(map.getBounds()),
+    zoomend: () => onChange(map.getBounds()),
+  });
+
+  useEffect(() => {
+    onChange(map.getBounds());
+  }, [map, onChange]);
+
+  return null;
 }
 
 export function EventMap({ events }: { events: Event[] }) {
@@ -51,11 +68,26 @@ export function EventMap({ events }: { events: Event[] }) {
   }, [located, base]);
 
   const [dayRange, setDayRange] = useState<[number, number]>([0, maxDay]);
+  const [bounds, setBounds] = useState<LatLngBounds | null>(null);
 
-  const visible = located.filter((event) => {
-    const day = eventDayIndex(event.start_at) - base;
-    return day >= dayRange[0] && day < dayRange[1];
-  });
+  const visible = useMemo(
+    () =>
+      located.filter((event) => {
+        const day = eventDayIndex(event.start_at) - base;
+        return day >= dayRange[0] && day < dayRange[1];
+      }),
+    [located, base, dayRange]
+  );
+
+  // The markers stay on every event in the date range; only the card list
+  // follows the viewport, since offscreen markers are invisible anyway.
+  const inView = useMemo(
+    () =>
+      bounds
+        ? visible.filter((event) => bounds.contains([event.latitude, event.longitude]))
+        : visible,
+    [visible, bounds]
+  );
 
   const groups = useMemo(() => {
     const byLocation = new Map<string, typeof visible>();
@@ -102,6 +134,7 @@ export function EventMap({ events }: { events: Event[] }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <BoundsWatcher onChange={setBounds} />
         {groups.map((group) => (
           <Marker
             key={group[0].id}
@@ -144,6 +177,18 @@ export function EventMap({ events }: { events: Event[] }) {
           </Marker>
         ))}
       </MapContainer>
+
+      {inView.length === 0 ? (
+        <div className="text-center text-muted-foreground py-10">
+          No events in this area, try zooming out or widening the date range.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {inView.map((event) => (
+            <ThumbnailCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
