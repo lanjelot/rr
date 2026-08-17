@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 import moment from "moment";
 import type { Event } from "~/lib/data";
-import { cn, eventDate, eventTime, isFutureEvent, isHappeningNow, isThisWeek } from "~/lib/utils";
+import { cn, isFutureEvent, isThisWeek } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
-import { DateBadge, RegionBadge } from "./event-badges";
-import { TicketLink } from "./ticket-link";
-import { Dialog, DialogClose, DialogContent, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { XCircleIcon } from "@heroicons/react/24/outline";
+import { EventDetailsCard } from "./event-details-card";
+import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
 const WINDOW_START_HOUR = 10;
@@ -111,57 +109,6 @@ function buildDayGroups(events: Event[]): DayGroup[] {
       day,
       items: items.sort((a, b) => a.startMin - b.startMin || a.endMin - b.endMin),
     }));
-}
-
-function EventDetailsCard({ event }: { event: Event }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="relative">
-        <img
-          src={event.flyer}
-          alt=""
-          className="w-full object-cover h-80 rounded-t-xl"
-        />
-        <div className="absolute top-2 left-2">
-          <DateBadge event={event} />
-        </div>
-        <div className="absolute top-2 right-2">
-          <RegionBadge event={event} />
-        </div>
-        <DialogClose className="absolute bottom-2 right-2 text-white">
-          <XCircleIcon className="size-6" />
-        </DialogClose>
-      </div>
-
-      <div className="flex flex-col gap-3 px-4 pb-4">
-        <DialogTitle className="text-center">{event.name}</DialogTitle>
-        <div className="flex flex-col gap-3 text-sm text-muted-foreground">
-          <ul>
-            {event.artists && <li>🎧 {event.artists}</li>}
-            {event.djs && <li>🎧 {event.djs}</li>}
-            {event.promoter && <li>🌀 {event.promoter}</li>}
-          </ul>
-          <ul>
-            <li className="flex justify-between gap-1">
-              <span>📅 {eventDate(event)}</span>
-              {isHappeningNow(event) && (
-                <span className="bg-red-300 rounded-md px-3 text-black">Happening now</span>
-              )}
-            </li>
-            <li>⏰ {eventTime(event)}</li>
-            <li>📍 {event.location}</li>
-            {event.venue && <li>🏛️ {event.venue}</li>}
-          </ul>
-          <ul>
-            {event.genre && <li>🎶 {event.genre}</li>}
-            {event.ticket && (
-              <li>🎫 <TicketLink event={event} /></li>
-            )}
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 function EventBar({ event, startMin, endMin }: DayItem) {

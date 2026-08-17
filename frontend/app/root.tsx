@@ -32,8 +32,10 @@ export function HydrateFallback() {
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
+  // the inline theme script below adds `dark` to <html> before hydration,
+  // which React would otherwise flag as an attribute mismatch
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
