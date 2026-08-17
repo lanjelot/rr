@@ -25,7 +25,7 @@ export function ThumbnailCard({ event }: { event: Event; }) {
             <div className="font-medium line-clamp-2 leading-none">{event.name}</div>
           </div>
           <div className="text-sm text-muted-foreground">
-            <div>{eventDateTime(event)}</div>
+            <div className="truncate">{eventDateTime(event)}</div>
             <div className="">{event.location}</div>
           </div>
         </div>
