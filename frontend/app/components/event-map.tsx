@@ -223,7 +223,7 @@ export function EventMap({ events }: { events: Event[] }) {
           center={sharedBbox ? undefined : AUSTRALIA_CENTER}
           zoom={sharedBbox ? undefined : AUSTRALIA_ZOOM}
           scrollWheelZoom
-          className="h-[70vh] w-full rounded-lg z-0"
+          className="h-[50vh] w-full rounded-lg z-0"
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
