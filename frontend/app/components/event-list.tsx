@@ -42,7 +42,7 @@ export function EventList({ events }: { events: Event[]; }) {
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-row gap-3 justify-between items-center">
-          <Input placeholder="Search..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
+          <Input type="search" placeholder="Search..." value={searchText} onChange={(e) => setSearchText(e.target.value)} />
 
           <ToggleGroup
             type="single"

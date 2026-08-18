@@ -9,8 +9,22 @@ import { XCircleIcon } from "@heroicons/react/24/outline";
 
 // Wraps `children` as the trigger for this event's details dialog. Open state
 // lives in the URL, so Back closes the dialog rather than leaving the page.
-export function EventDialog({ event, children }: { event: Event; children: ReactNode }) {
-  const { open, setOpen } = useUrlDialog("event", event.id);
+//
+// dialogId is the param value that opens this trigger, and must be unique among
+// the triggers mounted at once: every dialog matching the param opens its own
+// content, so a multi-day event's calendar bars would otherwise stack an overlay
+// and a title per day it spans. Default to the event id where there can only be
+// one trigger per event.
+export function EventDialog({
+  event,
+  dialogId = event.id,
+  children,
+}: {
+  event: Event;
+  dialogId?: number | string;
+  children: ReactNode;
+}) {
+  const { open, setOpen } = useUrlDialog("event", dialogId);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

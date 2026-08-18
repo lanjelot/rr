@@ -3,8 +3,7 @@ import moment from "moment";
 import type { Event } from "~/lib/data";
 import { cn, isFutureEvent, isThisWeek } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
-import { EventDetailsCard } from "./event-details-card";
-import { Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import { EventDialog } from "./event-details-card";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
 const WINDOW_START_HOUR = 10;
@@ -27,6 +26,9 @@ function hourMarkPct(hour: number): number {
 
 type DayItem = {
   event: Event;
+  // The show day this bar sits on. startMin/endMin are offsets from that day's
+  // window start, so they only mean anything alongside it.
+  day: string;
   startMin: number;
   endMin: number;
 };
@@ -75,32 +77,32 @@ function clipToDay(event: Event, day: string): DayItem | null {
 
   if (endMin <= startMin || startMin >= WINDOW_MINUTES) return null;
 
-  return { event, startMin, endMin: Math.min(WINDOW_MINUTES, Math.max(endMin, startMin + MIN_BAR_MINUTES)) };
+  return { event, day, startMin, endMin: Math.min(WINDOW_MINUTES, Math.max(endMin, startMin + MIN_BAR_MINUTES)) };
 }
 
 // Events landing entirely in the 6am-10am gap between windows still need a home, so pin
 // them to the end of their show day rather than dropping them off the calendar.
-function fallbackItem(event: Event): DayItem {
-  return { event, startMin: Math.max(0, WINDOW_MINUTES - MIN_BAR_MINUTES), endMin: WINDOW_MINUTES };
+function fallbackItem(event: Event, day: string): DayItem {
+  return { event, day, startMin: Math.max(0, WINDOW_MINUTES - MIN_BAR_MINUTES), endMin: WINDOW_MINUTES };
 }
 
 function buildDayGroups(events: Event[]): DayGroup[] {
   const dayItems = new Map<string, DayItem[]>();
 
-  const add = (day: string, item: DayItem) =>
-    dayItems.set(day, [...(dayItems.get(day) ?? []), item]);
+  const add = (item: DayItem) =>
+    dayItems.set(item.day, [...(dayItems.get(item.day) ?? []), item]);
 
   for (const event of events) {
     const clipped = eventShowDays(event)
-      .map((day) => ({ day, item: clipToDay(event, day) }))
-      .filter(({ item }) => item !== null);
+      .map((day) => clipToDay(event, day))
+      .filter((item) => item !== null);
 
     if (clipped.length === 0) {
-      add(showDay(event.start_at), fallbackItem(event));
+      add(fallbackItem(event, showDay(event.start_at)));
       continue;
     }
 
-    for (const { day, item } of clipped) add(day, item!);
+    for (const item of clipped) add(item);
   }
 
   return Array.from(dayItems.entries())
@@ -111,39 +113,36 @@ function buildDayGroups(events: Event[]): DayGroup[] {
     }));
 }
 
-function EventBar({ event, startMin, endMin }: DayItem) {
+// The dialog param is keyed on the day as well as the event, so each bar of a
+// multi-day event opens only its own dialog.
+function EventBar({ event, day, startMin, endMin }: DayItem) {
   const leftPct = (startMin / WINDOW_MINUTES) * 100;
   const widthPct = ((endMin - startMin) / WINDOW_MINUTES) * 100;
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 min-w-0 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
-          style={{
-            left: `${leftPct}%`,
-            width: `${widthPct}%`,
-            maxWidth: `calc(100% - ${leftPct}%)`,
-          }}
-        >
-          <img
-            src={event.flyer}
-            alt=""
-            loading="lazy"
-            className="flex-none size-10 rounded-md object-cover"
-          />
-          <div className="flex flex-col min-w-0 leading-tight">
-            <span className="text-xs font-medium truncate">{event.name}</span>
-            {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
-            <span className="text-[11px] text-muted-foreground truncate">{event.location}</span>
-          </div>
-        </button>
-      </DialogTrigger>
-      <DialogContent className="p-0">
-        <EventDetailsCard event={event} />
-      </DialogContent>
-    </Dialog>
+    <EventDialog event={event} dialogId={`${event.id}-${day}`}>
+      <button
+        type="button"
+        className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 min-w-0 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
+        style={{
+          left: `${leftPct}%`,
+          width: `${widthPct}%`,
+          maxWidth: `calc(100% - ${leftPct}%)`,
+        }}
+      >
+        <img
+          src={event.flyer}
+          alt=""
+          loading="lazy"
+          className="flex-none size-10 rounded-md object-cover"
+        />
+        <div className="flex flex-col min-w-0 leading-tight">
+          <span className="text-xs font-medium truncate">{event.name}</span>
+          {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
+          <span className="text-[11px] text-muted-foreground truncate">{event.location}</span>
+        </div>
+      </button>
+    </EventDialog>
   );
 }
 
