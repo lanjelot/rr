@@ -16,7 +16,7 @@ export function ThumbnailCard({ event }: { event: Event; }) {
     <EventDialog event={event}>
       <button
         type="button"
-        className="w-full h-48 flex flex-col gap-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-indigo-950 dark:hover:bg-indigo-800 border rounded-xl overflow-hidden cursor-pointer text-left"
+        className="w-full h-48 flex flex-col gap-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 border rounded-xl overflow-hidden cursor-pointer text-left"
       >
         <img
           src={event.flyer}
