@@ -1,5 +1,5 @@
 import type { Event } from "~/lib/data";
-import { formatDate, formatTime, isMultiDay } from "~/lib/utils";
+import { eventDate, formatDate, formatTime, isMultiDay } from "~/lib/utils";
 import { EventDialog } from "./event-details-card";
 
 function eventDateTime(
@@ -23,12 +23,10 @@ export function ThumbnailCard({ event }: { event: Event; }) {
           alt=""
           className="object-cover aspect-square w-full h-24"
         />
-        <div className="w-full px-3 pb-1 flex-1 min-h-0 flex flex-col justify-between">
+        <div className="w-full px-3 pb-1 flex-1 min-h-0 flex flex-col">
+         <div className="text-sm text-muted-foreground truncate">{eventDate(event)}</div>
           <div className="font-medium line-clamp-2 leading-tight">{event.name}</div>
-          <div className="text-sm min-w-0">
-            <div className="truncate">{eventDateTime(event)}</div>
-            <div className="truncate text-muted-foreground">{event.location}</div>
-          </div>
+          <div className="mt-auto text-sm truncate text-muted-foreground">{event.location}</div>
         </div>
       </button>
     </EventDialog>

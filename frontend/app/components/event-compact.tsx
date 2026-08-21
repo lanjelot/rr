@@ -1,6 +1,7 @@
 import { type Event } from "~/lib/data";
 import { eventDay, eventTime, isMultiDay } from "~/lib/utils";
 import { Link } from "react-router";
+import { EventDialog } from "./event-details-card";
 
 
 export function EventCompact({ event }: { event: Event; }) {
@@ -9,7 +10,7 @@ export function EventCompact({ event }: { event: Event; }) {
     .join(", ");
 
   return (
-    <Link to={`/events/${event.id}`}>
+    <EventDialog event={event}>
       <div className="w-full min-h-24 mx-auto p-3 rounded-xl bg-zinc-100 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer flex flex-row gap-2 items-stretch transition-colors">
         <img
           src={event.flyer}
@@ -25,17 +26,15 @@ export function EventCompact({ event }: { event: Event; }) {
             </div>
           </div>
           <ul className="text-muted-foreground text-xs">
-            {lineup &&
-              <li className="line-clamp-1">🎧 {lineup}</li>
-            }
+            <li className="line-clamp-1">🎧 {lineup && lineup || "..."}</li>
             <li>⏰ {eventTime(event)}</li>
             <li className="flex justify-between gap-1">
-              <div>📍 {event.location}</div>
+              <div>📍 {(event.location === event.zone && event.venue) || event.location}</div>
               <div>{event.zone}</div>
             </li>
           </ul>
         </div>
       </div>
-    </Link>
+    </EventDialog>
   );
 }
