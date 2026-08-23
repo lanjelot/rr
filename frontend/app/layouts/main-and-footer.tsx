@@ -1,4 +1,4 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import type { Route } from "./+types/main-and-footer";
 import { BeakerIcon, CalendarDaysIcon, HomeIcon, InformationCircleIcon, MapIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
@@ -8,8 +8,14 @@ import { ThemeProvider } from "~/contexts/theme-context";
 import { RegionProvider, useRegion } from "~/contexts/region-context";
 import { RegionSelection } from "~/components/region-selection-multiple";
 
+const ROUTES_WITHOUT_REGION_SELECTION = ["/map", "/about"];
+
 function Navbar() {
   const { selectedRegions, setSelectedRegions } = useRegion();
+  const { pathname } = useLocation();
+  const showRegionSelection = !ROUTES_WITHOUT_REGION_SELECTION.includes(
+    pathname.replace(/\/+$/, "") || "/"
+  );
 
   return (
     <div className="flex items-center gap-3 pb-3 mb-3 border-b dark:border-white/25">
@@ -22,7 +28,9 @@ function Navbar() {
         The Rave Roster
       </Link>
       <div className="ms-auto flex items-center gap-2">
-        <RegionSelection selectedRegions={selectedRegions} onSelectedRegions={setSelectedRegions} />
+        {showRegionSelection && (
+          <RegionSelection selectedRegions={selectedRegions} onSelectedRegions={setSelectedRegions} />
+        )}
         <ThemeToggle />
       </div>
     </div>

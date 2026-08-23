@@ -202,7 +202,7 @@ export function EventMap({ events }: { events: Event[] }) {
       <div className="relative overflow-hidden">
         {/* Overlaid on the top-right corner: Leaflet's own controls own the top
             left, and z-[1000] clears its control panes. */}
-        <div className="absolute top-2 right-2 z-[1000]">
+        <div className="absolute top-2 right-2 z-[10]">
           <Button variant="secondary" size="sm" onClick={share} className="">
             <Share2Icon />
             {shareState === "idle" ? (
