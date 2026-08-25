@@ -29,7 +29,18 @@ export function EventDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="p-0">
+      <DialogContent
+        className="p-0"
+        // A mouse back/forward button (3/4) arrives as a pointerdown on the
+        // overlay, which Radix reads as a backdrop dismiss — but the browser is
+        // already doing its own history back for that same press, so setOpen's
+        // navigate(-1) would pop a second entry and take us off the page.
+        // Ignoring non-primary buttons keeps it to one pop; touch and pen both
+        // report button 0, and Radix already handles right-click itself.
+        onPointerDownOutside={(event) => {
+          if (event.detail.originalEvent.button !== 0) event.preventDefault();
+        }}
+      >
         <EventDetailsCard event={event} />
       </DialogContent>
     </Dialog>
