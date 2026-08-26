@@ -2,29 +2,31 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { REGIONS } from "~/lib/data";
 
-const DEFAULT_REGIONS = ["QLD", "NNSW"];
-
 type RegionContextType = {
   selectedRegions: string[];
   setSelectedRegions: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
 const RegionContext = createContext<RegionContextType>({
-  selectedRegions: DEFAULT_REGIONS,
+  selectedRegions: [],
   setSelectedRegions: () => {},
 });
 
 function loadSelectedRegions(): string[] {
   try {
     const stored = localStorage.getItem("selectedRegions");
-    return stored ? JSON.parse(stored) : DEFAULT_REGIONS;
+    if (!stored) return REGIONS;
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return REGIONS;
+    return parsed.filter((r) => REGIONS.includes(r));
   } catch {
-    return DEFAULT_REGIONS;
+    return REGIONS;
   }
 }
 
 function parseRegionParam(param: string | null): string[] | null {
   if (!param) return null;
+  if (param === "all") return REGIONS;
   const regions = param
     .split(",")
     .map((r) => r.trim().toUpperCase())
@@ -34,13 +36,15 @@ function parseRegionParam(param: string | null): string[] | null {
 
 export function RegionProvider({ children }: { children: React.ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(DEFAULT_REGIONS);
+  // Initialised synchronously so the persist effect below can never write the
+  // fallback over a stored selection (StrictMode runs mount effects twice).
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(() => {
+    const fromQuery = parseRegionParam(new URLSearchParams(window.location.search).get("region"));
+    return fromQuery ?? loadSelectedRegions();
+  });
 
   useEffect(() => {
-    const fromQuery = parseRegionParam(searchParams.get("region"));
-    setSelectedRegions(fromQuery ?? loadSelectedRegions());
-
-    if (fromQuery) {
+    if (searchParams.get("region")) {
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev);

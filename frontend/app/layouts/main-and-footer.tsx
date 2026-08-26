@@ -60,7 +60,7 @@ export default function Component(_: Route.ComponentProps) {
               />
               <FooterNavLink
                 to="/events"
-                label="Events"
+                label="Upcoming"
                 icon={<BeakerIcon className="size-5" />}
               />
               <FooterNavLink
