@@ -322,7 +322,11 @@ export function EventMap({ events }: { events: Event[] }) {
 function EventMarkerCard({ event }: { event: Event; }) {
 
   return (
-    <EventDialog event={event}>
+    // Namespaced so the marker's dialog doesn't share a param value with the
+    // ThumbnailCard for the same event in the list below: both triggers are
+    // mounted at once, so a bare id opened two dialogs, and closing them
+    // restored focus to the thumbnail — scrolling the page down to it.
+    <EventDialog event={event} dialogId={`map-${event.id}`}>
       <button
         type="button"
         className="w-full flex items-center text-start gap-2 w-40"
