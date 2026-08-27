@@ -35,7 +35,7 @@ export function EventList({ events }: { events: Event[]; }) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Events</BreadcrumbPage>
+            <BreadcrumbPage>Upcoming events</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>

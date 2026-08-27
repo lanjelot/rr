@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Popup, Marker, useMapEvents } from "react-leaflet";
 import type { LatLngBounds, LatLngBoundsLiteral } from "leaflet";
 import { Link, useSearchParams } from "react-router";
@@ -12,6 +12,7 @@ import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
 import { ThumbnailCard } from "~/components/thumbnail-card";
+import { EventDialog } from "./event-details-card";
 
 const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
@@ -69,6 +70,46 @@ function BoundsWatcher({ onChange }: { onChange: (bounds: LatLngBounds) => void 
   return null;
 }
 
+// Radix's slider thumb attaches a fresh callback ref on every render and sets
+// state from it, so each re-render queues an update during the commit phase.
+// Panning the map re-renders EventMap on every moveend/zoomend, and those
+// commit-phase updates stack up until React trips its nested-update limit
+// ("Maximum update depth exceeded"). Memoizing keeps viewport changes — which
+// the slider doesn't care about — from re-rendering it at all.
+const DateRangeSlider = memo(function DateRangeSlider({
+  monday,
+  maxDay,
+  dayRange,
+  onChange,
+}: {
+  monday: moment.Moment;
+  maxDay: number;
+  dayRange: [number, number];
+  onChange: (value: number[]) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <Label htmlFor="slider-date-range">Date Range</Label>
+        <span className="text-sm text-muted-foreground">
+          {monday.clone().add(dayRange[0], "days").format("ddd D MMM YYYY")}
+          {" – "}
+          {monday.clone().add(dayRange[1] - 1, "days").format("ddd D MMM YYYY")}
+        </span>
+      </div>
+      <Slider
+        id="slider-date-range"
+        min={0}
+        max={maxDay}
+        step={7}
+        minStepsBetweenThumbs={1}
+        value={dayRange}
+        onValueChange={onChange}
+      />
+    </div>
+  );
+});
+
 export function EventMap({ events }: { events: Event[] }) {
   // Anchor the slider on the Monday of the current week so every step lands on a
   // Mon–Sun week boundary.
@@ -110,6 +151,19 @@ export function EventMap({ events }: { events: Event[] }) {
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
 
+  // Stable so the memoized slider isn't re-rendered by map movement.
+  const changeDayRange = useCallback(
+    (value: number[]) => setDayRange(value as [number, number]),
+    []
+  );
+
+  // getBounds() hands back a fresh object every time, so drop the ones that
+  // describe the same viewport (a click, or the moveend that trails a zoom)
+  // instead of re-rendering the list and markers for nothing.
+  const changeBounds = useCallback((next: LatLngBounds) => {
+    setBounds((previous) => (previous?.equals(next) ? previous : next));
+  }, []);
+
   const visible = useMemo(
     () =>
       located.filter((event) => {
@@ -139,6 +193,32 @@ export function EventMap({ events }: { events: Event[] }) {
     }
     return [...byLocation.values()];
   }, [visible]);
+
+  // Held as elements rather than data: the markers only depend on the date
+  // range, so reusing them lets React skip the whole layer — popups and their
+  // dialogs included — when only the viewport changed.
+  const markers = useMemo(
+    () =>
+      groups.map((group) => (
+        <Marker
+          key={group[0].id}
+          position={[group[0].latitude, group[0].longitude]}
+        >
+          <Popup>
+            {group.length === 1 ? (
+              <EventMarkerCard event={group[0]} />
+            ) : (
+              <div className="flex flex-col gap-2 w-40 max-h-80 overflow-y-auto">
+                {group.map((event) => (
+                  <EventMarkerCard key={event.id} event={event} />
+                ))}
+              </div>
+            )}
+          </Popup>
+        </Marker>
+      )),
+    [groups]
+  );
 
   useEffect(() => {
     if (shareState === "idle") return;
@@ -178,25 +258,12 @@ export function EventMap({ events }: { events: Event[] }) {
   return (
     <div className="flex flex-col gap-4">
       {maxDay > 7 && (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2">
-            <Label htmlFor="slider-date-range">Date Range</Label>
-            <span className="text-sm text-muted-foreground">
-              {monday.clone().add(dayRange[0], "days").format("ddd D MMM YYYY")}
-              {" – "}
-              {monday.clone().add(dayRange[1] - 1, "days").format("ddd D MMM YYYY")}
-            </span>
-          </div>
-          <Slider
-            id="slider-date-range"
-            min={0}
-            max={maxDay}
-            step={7}
-            minStepsBetweenThumbs={1}
-            value={dayRange}
-            onValueChange={(value) => setDayRange(value as [number, number])}
-          />
-        </div>
+        <DateRangeSlider
+          monday={monday}
+          maxDay={maxDay}
+          dayRange={dayRange}
+          onChange={changeDayRange}
+        />
       )}
 
       <div className="relative overflow-hidden">
@@ -229,48 +296,8 @@ export function EventMap({ events }: { events: Event[] }) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
-          <BoundsWatcher onChange={setBounds} />
-          {groups.map((group) => (
-            <Marker
-              key={group[0].id}
-              position={[group[0].latitude, group[0].longitude]}
-            >
-              <Popup>
-                {group.length === 1 ? (
-                  <Link
-                    to={`/events/${group[0].id}`}
-                    className="flex items-center gap-2 w-40"
-                    style={{ color: "inherit" }}
-                  >
-                    <img src={group[0].flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
-                    <div className="flex flex-col leading-tight overflow-hidden">
-                      <div className="font-semibold truncate">{group[0].name}</div>
-                      <div className="text-xs">{group[0].venue || group[0].location}</div>
-                      <div className="text-xs truncate">{eventDate(group[0])}</div>
-                    </div>
-                  </Link>
-                ) : (
-                  <div className="flex flex-col gap-2 w-40 max-h-80 overflow-y-auto">
-                    {group.map((event) => (
-                      <Link
-                        key={event.id}
-                        to={`/events/${event.id}`}
-                        className="flex items-center gap-2"
-                        style={{ color: "inherit" }}
-                      >
-                        <img src={event.flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
-                        <div className="flex flex-col leading-tight overflow-hidden">
-                          <div className="font-semibold truncate">{event.name}</div>
-                          <div className="text-xs">{group[0].venue || group[0].location}</div>
-                          <div className="text-xs truncate">{eventDate(event)}</div>
-                        </div>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </Popup>
-            </Marker>
-          ))}
+          <BoundsWatcher onChange={changeBounds} />
+          {markers}
         </MapContainer>
       </div>
       {inView.length === 0 ? (
@@ -288,5 +315,43 @@ export function EventMap({ events }: { events: Event[] }) {
         </>
       )}
     </div>
+  );
+}
+
+
+function EventMarkerCard({ event }: { event: Event; }) {
+
+  return (
+    <EventDialog event={event}>
+      <button
+        type="button"
+        className="w-full flex items-center text-start gap-2 w-40"
+      >
+        <img src={event.flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+        <div className="flex flex-col leading-tight overflow-hidden">
+          <div className="font-semibold truncate">{event.name}</div>
+          <div className="text-xs truncate">{event.location}</div>
+          <div className="text-xs truncate">{eventDate(event)}</div>
+        </div>
+      </button>
+    </EventDialog>
+  );
+}
+
+
+function EventMarkerLink({ event }: { event: Event; }) {
+  return (
+    <Link
+      to={`/events/${event.id}`}
+      className="flex items-center gap-2 w-40"
+      style={{ color: "inherit" }}
+    >
+      <img src={event.flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+      <div className="flex flex-col leading-tight overflow-hidden">
+        <div className="font-semibold truncate">{event.name}</div>
+        <div className="text-xs">{event.location}</div>
+        <div className="text-xs truncate">{eventDate(event)}</div>
+      </div>
+    </Link>
   );
 }
