@@ -72,6 +72,7 @@ export function regionsForLocation(location: GeoLocation): string[] {
   if (state === "NSW") return ["NNSW", "NSW", "ACT"];
   if (state === "ACT") return ["NSW", "ACT", "VIC"];
   if (state === "VIC") return ["NSW", "ACT", "VIC", "SA"];
+  if (state === "SA") return ["VIC", "SA"];
 
   return REGIONS.includes(state) ? [state] : REGIONS;
 }
