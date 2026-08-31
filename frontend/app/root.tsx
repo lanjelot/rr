@@ -45,7 +45,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y2ZTSP1ZBL" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-Y2ZTSP1ZBL');gtag('config','G-W4YMRP9BCT');`,
+            __html: `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-W4YMRP9BCT');`,
           }}
         />
       </head>
