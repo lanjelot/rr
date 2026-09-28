@@ -37,7 +37,7 @@ export function EventCard({ event }: { event: Event; }) {
         </div>
 
         <div>
-          <div className="text-center font-medium px-3">{event.name}</div>
+          <div className="text-center text-lg font-medium px-3">{event.name}</div>
           <div className="text-sm text-muted-foreground p-3">
             <div className="flex flex-col gap-6">
               <ul>

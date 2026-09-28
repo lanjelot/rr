@@ -28,7 +28,7 @@ function EventList({ events }: { events: Event[]; }) {
     <div className="flex flex-col gap-3">
       {groupEventsByDay(events).map(group => (
         <div key={group.day} className="flex flex-col gap-1">
-          <div className="text-muted-foreground font-semimedium text-end">
+          <div className="text-muted-foreground font-semibold text-end me-1">
             {moment(group.day, "YYYY-MM-DD").format("ddd D MMM")}
           </div>
           {group.events.map((event: Event) => (
