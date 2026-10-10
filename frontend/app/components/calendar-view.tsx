@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import moment from "moment";
 import type { Event } from "~/lib/data";
-import { cn, isFutureEvent, isThisWeek } from "~/lib/utils";
+import { cn, isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { EventDialog } from "./event-details-card";
 
@@ -186,6 +186,16 @@ function weekLabel(weekStart: string): string {
   return `Fri ${friday.format(sameMonth ? "D" : "D MMM")} - Sun ${sunday.format("D")}`;
 }
 
+// Whether the event falls in the current Tue-Tue week (using the same show-day cutoff),
+// so e.g. last Monday's events, which belong to the previous week, are excluded.
+// 10am cutoff: "today" is shifted by the same 10am cutoff the rest of the calendar uses.
+// For example, at 5am on a Tuesday the current week is still the previous one, which
+// matches how the tabs and the "Today" tag behave.
+function isThisShowWeek(event: Event): boolean {
+  const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
+  return weekKey(showDay(event.start_at)) === weekKey(today);
+}
+
 function groupByWeek(dayGroups: DayGroup[]): WeekTab[] {
   const map = new Map<string, DayGroup[]>();
 
@@ -307,7 +317,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const filteredEvents = useMemo(
     () =>
       events
-        .filter((event) => selectedRegions.includes(event.region) && (isThisWeek(event) || isFutureEvent(event)))
+        .filter((event) => selectedRegions.includes(event.region) && (isThisShowWeek(event) || isFutureEvent(event)))
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
     [events, selectedRegions]
   );
