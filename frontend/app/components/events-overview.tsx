@@ -28,7 +28,7 @@ function EventList({ events }: { events: Event[]; }) {
     <div className="flex flex-col gap-3">
       {groupEventsByDay(events).map(group => (
         <div key={group.day} className="flex flex-col gap-1">
-          <div className="text-muted-foreground font-semibold text-end me-1">
+          <div className="text-muted-foreground font-semibold ms-1">
             {moment(group.day, "YYYY-MM-DD").format("ddd D MMM")}
           </div>
           {group.events.map((event: Event) => (
@@ -60,7 +60,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
 
   return (
     <Tabs value={tab} onValueChange={selectTab} className="gap-0">
-      <TabsList variant="line">
+      <TabsList variant="line" className="self-center">
         <TabsTrigger value="this-weekend">This weekend</TabsTrigger>
         <TabsTrigger value="next-weekend">Next weekend</TabsTrigger>
       </TabsList>
