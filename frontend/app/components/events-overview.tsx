@@ -1,5 +1,5 @@
 import type { Event } from "~/lib/data";
-import { isNextWeek, isThisWeek } from "~/lib/utils";
+import { isFutureEvent, isNextWeek, isThisWeek } from "~/lib/utils";
 import { EventCompact } from "./event-compact";
 import { useRegion } from "~/contexts/region-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -28,7 +28,7 @@ function EventList({ events }: { events: Event[]; }) {
     <div className="flex flex-col gap-3">
       {groupEventsByDay(events).map(group => (
         <div key={group.day} className="flex flex-col gap-1">
-          <div className="text-muted-foreground font-semibold ms-1">
+          <div className="text-muted-foreground font-semibold ms-3">
             {moment(group.day, "YYYY-MM-DD").format("ddd D MMM")}
           </div>
           {group.events.map((event: Event) => (
@@ -55,12 +55,12 @@ export function EventsOverview({ events }: { events: Event[]; }) {
 
   const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region));
 
-  const thisWeek = regionEvents.filter((event: Event) => isThisWeek(event));
+  const thisWeek = regionEvents.filter((event: Event) => isThisWeek(event) && isFutureEvent(event));
   const nextWeek = regionEvents.filter((event: Event) => isNextWeek(event));
 
   return (
     <Tabs value={tab} onValueChange={selectTab} className="gap-0">
-      <TabsList variant="line" className="self-center">
+      <TabsList variant="line" className="self-end">
         <TabsTrigger value="this-weekend">This weekend</TabsTrigger>
         <TabsTrigger value="next-weekend">Next weekend</TabsTrigger>
       </TabsList>
