@@ -117,6 +117,9 @@ export function EventListDialog({ events }: { events: Event[] }) {
 // dismissable layer, hence pointer-events-auto (Radix disables pointer events on
 // the body while a modal is open) and the data-dialog-keep-open that
 // EventDialogContent checks so a press here doesn't count as clicking away.
+// It also means a separate portal from the overlay's, and portals don't reliably
+// land in the same order on every open, so z-[60] keeps it above the overlay's
+// z-50 rather than under its blur.
 function StepStrip({
   side,
   target,
@@ -137,7 +140,7 @@ function StepStrip({
       disabled={!target}
       onClick={() => target && onClick(target)}
       className={cn(
-        "group fixed inset-y-0 z-50 w-12 sm:w-20 flex items-center justify-center pointer-events-auto cursor-pointer disabled:invisible",
+        "group fixed inset-y-0 z-[60] w-12 sm:w-20 flex items-center justify-center pointer-events-auto cursor-pointer disabled:invisible",
         side === "left" ? "left-0 sm:left-auto sm:right-[calc(50%+12rem)]" : "right-0 sm:right-auto sm:left-[calc(50%+12rem)]"
       )}
     >
