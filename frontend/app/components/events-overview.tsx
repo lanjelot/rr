@@ -1,6 +1,8 @@
 import type { Event } from "~/lib/data";
-import { isFutureEvent, isNextWeek, isThisWeek } from "~/lib/utils";
+import { isNextWeek, isThisWeek } from "~/lib/utils";
 import { EventCompact } from "./event-compact";
+import { EventListDialog } from "./event-details-card";
+import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { useRegion } from "~/contexts/region-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import { useSearchParams } from "react-router";
@@ -24,6 +26,8 @@ function groupEventsByDay(events: Event[]) {
 }
 
 function EventList({ events }: { events: Event[]; }) {
+  const { show } = useUrlDialogParam("event");
+
   return (
     <div className="flex flex-col gap-3">
       {groupEventsByDay(events).map(group => (
@@ -32,10 +36,11 @@ function EventList({ events }: { events: Event[]; }) {
             {moment(group.day, "YYYY-MM-DD").format("ddd D MMM")}
           </div>
           {group.events.map((event: Event) => (
-            <EventCompact key={event.id} event={event} />
+            <EventCompact key={event.id} event={event} onClick={() => show(event.id)} />
           ))}
         </div>
       ))}
+      <EventListDialog events={events} />
     </div>
   );
 }
@@ -55,7 +60,7 @@ export function EventsOverview({ events }: { events: Event[]; }) {
 
   const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region));
 
-  const thisWeek = regionEvents.filter((event: Event) => isThisWeek(event) && isFutureEvent(event));
+  const thisWeek = regionEvents.filter((event: Event) => isThisWeek(event));
   const nextWeek = regionEvents.filter((event: Event) => isNextWeek(event));
 
   return (

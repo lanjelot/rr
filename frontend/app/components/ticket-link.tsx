@@ -1,3 +1,4 @@
+import { ArrowTopRightOnSquareIcon } from "@heroicons/react/24/outline";
 import type { Event } from "~/lib/data";
 
 
@@ -10,6 +11,7 @@ export function TicketLink({ event }: { event: Event }) {
       rel="noopener noreferrer"
     >
       {event.ticket}
+      <ArrowTopRightOnSquareIcon className="inline size-[1em] ms-0.5 align-[-0.125em]" />
     </a>
   )
 }
