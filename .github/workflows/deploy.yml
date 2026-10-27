@@ -2,7 +2,7 @@ name: Deploy static site to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, data]
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # pinned to main since pushes to `data` also trigger this workflow
       - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - uses: actions/checkout@v4
         with:
