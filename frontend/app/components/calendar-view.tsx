@@ -1,8 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
+import { Share2Icon } from "lucide-react";
 import moment from "moment";
-import type { Event } from "~/lib/data";
+import { REGIONS, type Event } from "~/lib/data";
 import { cn, isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
+import { Button } from "~/components/ui/button";
 import { EventDialog } from "./event-details-card";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
@@ -209,16 +212,14 @@ function groupByWeek(dayGroups: DayGroup[]): WeekTab[] {
     .map(([key, groups]) => ({ key, label: weekLabel(key), groups }));
 }
 
-// Months are built out of whole weeks, so a week that straddles two months shows up
-// under both month tabs rather than having its days split between them.
+// Months are built out of whole weeks, and a week that straddles two months belongs to
+// the month its Friday falls in, matching the Fri-Sun span the week is labelled by.
 function groupByMonth(weeks: WeekTab[]): MonthTab[] {
   const map = new Map<string, WeekTab[]>();
 
   for (const week of weeks) {
-    const keys = new Set(week.groups.map((group) => monthKey(group.day)));
-    for (const key of keys) {
-      map.set(key, [...(map.get(key) ?? []), week]);
-    }
+    const key = monthKey(moment(week.key).add(3, "days").format("YYYY-MM-DD"));
+    map.set(key, [...(map.get(key) ?? []), week]);
   }
 
   return Array.from(map.entries())
@@ -309,10 +310,68 @@ function TabRow({
   );
 }
 
+// Shared links carry the regions too, since the week alone would otherwise show
+// whatever regions the recipient last had selected.
+function regionParam(regions: string[]): string {
+  return REGIONS.every((region) => regions.includes(region)) ? "all" : regions.join(",");
+}
+
+function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }) {
+  const [, setSearchParams] = useSearchParams();
+  const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
+
+  useEffect(() => {
+    if (shareState === "idle") return;
+    const timer = setTimeout(() => setShareState("idle"), 4000);
+    return () => clearTimeout(timer);
+  }, [shareState]);
+
+  async function share() {
+    const params = new URLSearchParams({ week: week.key, region: regionParam(regions) });
+    const url = `${window.location.origin}${window.location.pathname}?${params}`;
+
+    // Put the params in the address bar too, so the link is still recoverable if
+    // neither the share sheet nor the clipboard is available.
+    setSearchParams(params, { replace: true, preventScrollReset: true });
+
+    // Phones get the native share sheet; everything else copies the link.
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: `${week.label} | The Rave Roster`, url });
+        return;
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+      }
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareState("copied");
+    } catch {
+      setShareState("failed");
+    }
+  }
+
+  return (
+    <Button variant="secondary" size="sm" onClick={share} className="flex-none">
+      <Share2Icon />
+      <span>
+        {shareState === "idle"
+          ? "Share"
+          : shareState === "copied"
+            ? "Link copied"
+            : "Couldn't copy, share link in address bar"}
+      </span>
+    </Button>
+  );
+}
+
 export function CalendarView({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
+  const [searchParams] = useSearchParams();
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
-  const [activeWeek, setActiveWeek] = useState<string | null>(null);
+  // Read once, on mount: a shared link opens on its week, then the tabs own the state.
+  const [activeWeek, setActiveWeek] = useState<string | null>(() => searchParams.get("week"));
 
   const filteredEvents = useMemo(
     () =>
@@ -334,7 +393,10 @@ export function CalendarView({ events }: { events: Event[]; }) {
     );
   }
 
-  const currentMonth = months.find((month) => month.key === activeMonth) ?? months[0];
+  const currentMonth =
+    months.find((month) => month.key === activeMonth) ??
+    months.find((month) => month.weeks.some((week) => week.key === activeWeek)) ??
+    months[0];
   const currentWeek =
     currentMonth.weeks.find((week) => week.key === activeWeek) ?? currentMonth.weeks[0];
 
@@ -344,7 +406,12 @@ export function CalendarView({ events }: { events: Event[]; }) {
   return (
     <div className="flex flex-col gap-3">
       <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+        </div>
+        <ShareWeekButton week={currentWeek} regions={selectedRegions} />
+      </div>
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (

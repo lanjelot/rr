@@ -8,6 +8,8 @@ import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { Squares2X2Icon, ListBulletIcon } from "@heroicons/react/24/outline";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb";
 import { useRegion } from "~/contexts/region-context";
+import { useUrlDialogParam } from "~/hooks/url-dialog";
+import { EventListDialog } from "./event-details-card";
 
 type ViewMode = "thumbnail" | "detailed" ;
 
@@ -15,6 +17,7 @@ export function EventList({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
   const [searchText, setSearchText] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("thumbnail");
+  const { show } = useUrlDialogParam("event");
 
   const normalizedSearchText = searchText.trim().toLowerCase();
 
@@ -71,10 +74,11 @@ export function EventList({ events }: { events: Event[]; }) {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {filteredEvents.map((event: Event) => (
-              <ThumbnailCard key={event.id} event={event} />
+              <ThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
             ))}
           </div>
         )}
+        <EventListDialog events={filteredEvents} />
       </div>
     </div>
   );

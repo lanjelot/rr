@@ -12,7 +12,8 @@ import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { Slider } from "~/components/ui/slider";
 import { ThumbnailCard } from "~/components/thumbnail-card";
-import { EventDialog } from "./event-details-card";
+import { EventDialog, EventListDialog } from "./event-details-card";
+import { useUrlDialogParam } from "~/hooks/url-dialog";
 
 const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
@@ -136,6 +137,7 @@ export function EventMap({ events }: { events: Event[] }) {
   }, [located, base]);
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const { show } = useUrlDialogParam("event");
 
   // Both read once, on mount: after that the map and slider own their state, and
   // the URL is only rewritten when someone shares the view.
@@ -309,11 +311,14 @@ export function EventMap({ events }: { events: Event[] }) {
           <div className="font-medium">{inView.length} events in view</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {inView.map((event) => (
-              <ThumbnailCard key={event.id} event={event} />
+              <ThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
             ))}
           </div>
         </>
       )}
+      {/* Steps through the cards in view; the marker popups keep their own
+          namespaced EventDialog, so their "map-" ids never open this one. */}
+      <EventListDialog events={inView} />
     </div>
   );
 }
