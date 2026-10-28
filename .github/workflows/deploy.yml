@@ -49,6 +49,12 @@ jobs:
       - name: SPA fallback for client-side routing
         run: cp frontend/build/client/index.html frontend/build/client/404.html
 
+      # A page per event with its title and flyer as Open Graph tags, so shared
+      # event links get a preview (crawlers don't run the app).
+      - name: Event pages with link previews
+        working-directory: frontend
+        run: node scripts/event-pages.mjs build/client
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
