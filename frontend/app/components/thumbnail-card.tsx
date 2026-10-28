@@ -20,7 +20,7 @@ export function ThumbnailCard({ event, onClick }: { event: Event; onClick: () =>
       className="w-full h-48 flex flex-col gap-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 border rounded-xl overflow-hidden cursor-pointer text-left"
     >
       <img
-        src={event.flyer}
+        src={event.preview}
         alt=""
         className="object-cover aspect-square w-full h-24"
       />

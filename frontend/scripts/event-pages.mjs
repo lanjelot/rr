@@ -15,6 +15,10 @@ const shell = readFileSync(join(buildDir, "index.html"), "utf8");
 const events = JSON.parse(readFileSync(join(buildDir, "data/events.json"), "utf8"));
 const origin = `https://${readFileSync(join(buildDir, "CNAME"), "utf8").trim()}`;
 
+// Same as previewPath in app/lib/data.ts: /data/flyers/abc.png → /data/previews/abc.jpg
+const previewPath = (flyer) =>
+  flyer.replace("/flyers/", "/previews/").replace(/\.\w+$/, ".jpg");
+
 const escape = (text) =>
   String(text).replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
@@ -48,7 +52,7 @@ for (const event of events) {
     `<meta property="og:url" content="${escape(url)}"/>`,
     `<meta property="og:title" content="${escape(event.name)}"/>`,
     `<meta property="og:description" content="${escape(description)}"/>`,
-    `<meta property="og:image" content="${escape(origin + (event.preview ?? event.flyer))}"/>`,
+    `<meta property="og:image" content="${escape(origin + previewPath(event.flyer))}"/>`,
     `<meta name="twitter:card" content="summary_large_image"/>`,
   ].join("");
 

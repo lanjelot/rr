@@ -15,7 +15,7 @@ export function EventCompact({ event, onClick }: { event: Event; onClick: () => 
     <button type="button" onClick={onClick} className="text-left">
       <div className="w-full min-h-32 mx-auto p-3 rounded-xl bg-zinc-100 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer flex flex-row gap-2 items-stretch transition-colors">
         <img
-          src={event.flyer}
+          src={event.preview}
           alt=""
           loading="lazy"
           className="flex-none size-24 object-cover rounded-sm self-center"

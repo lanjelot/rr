@@ -141,7 +141,7 @@ function EventBar({ item, onClick }: { item: DayItem; onClick: () => void }) {
       }}
     >
       <img
-        src={event.flyer}
+        src={event.preview}
         alt=""
         loading="lazy"
         className="flex-none size-10 rounded-md object-cover"

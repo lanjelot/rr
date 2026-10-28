@@ -8,20 +8,32 @@ export const BACKEND_API = "/api";
 const STATIC_DATA = import.meta.env.VITE_STATIC_DATA === "true";
 const BASE_URL = import.meta.env.BASE_URL;
 
+// The static export saves a small JPEG copy of each flyer, named after it:
+// /data/flyers/abc.png → /data/previews/abc.jpg
+function previewPath(flyer: string): string {
+  return flyer.replace("/flyers/", "/previews/").replace(/\.\w+$/, ".jpg");
+}
+
 async function fetchStaticEvents(): Promise<Event[]> {
   const res = await fetch(`${BASE_URL}data/events.json`);
   const events: Event[] = await res.json();
-  return events.map((event) => ({
-    ...event,
-    flyer: `${BASE_URL}${event.flyer.replace(/^\//, "")}`,
-  }));
+  return events.map((event) => {
+    const flyer = `${BASE_URL}${event.flyer.replace(/^\//, "")}`;
+    return { ...event, flyer, preview: previewPath(flyer) };
+  });
+}
+
+// The API has no previews, so thumbnails use the flyer itself.
+function withFlyerAsPreview(event: Event): Event {
+  return { ...event, preview: event.flyer };
 }
 
 export async function fetchEvents(): Promise<Event[]> {
   if (STATIC_DATA) return fetchStaticEvents();
 
   const res = await fetch(`${BACKEND_API}/events/`);
-  return res.json();
+  const events: Event[] = await res.json();
+  return events.map(withFlyerAsPreview);
 }
 
 export async function fetchEvent(id: string): Promise<Event | undefined> {
@@ -32,7 +44,7 @@ export async function fetchEvent(id: string): Promise<Event | undefined> {
 
   const res = await fetch(`${BACKEND_API}/events/${id}/`);
   if (!res.ok) return undefined;
-  return res.json();
+  return withFlyerAsPreview(await res.json());
 }
 
 export type Event = {
@@ -44,6 +56,8 @@ export type Event = {
   start_at: string;
   finish_at: string;
   flyer: string;
+  // A downsized copy of the flyer, for thumbnails.
+  preview: string;
   promoter?: string;
   artists?: string;
   djs?: string;
