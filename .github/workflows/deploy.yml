@@ -2,7 +2,9 @@ name: Deploy static site to GitHub Pages
 
 on:
   push:
-    branches: [main, data]
+    branches: [main]
+  # Run by export-and-push.sh after it pushes new data: the orphan `data` branch
+  # has no workflow file, so a push there can't trigger this itself.
   workflow_dispatch:
 
 permissions:
