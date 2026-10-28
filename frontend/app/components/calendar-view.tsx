@@ -233,13 +233,20 @@ function groupByMonth(weeks: WeekTab[]): MonthTab[] {
     .map(([key, monthWeeks]) => ({ key, label: monthLabel(key), weeks: monthWeeks }));
 }
 
+// Anchor id for a day card, so shared day links can scroll straight to it.
+function dayCardId(day: string): string {
+  return `day-${day}`;
+}
+
 function DayCard({
   group,
   today,
+  regions,
   onOpen,
 }: {
   group: DayGroup;
   today: string;
+  regions: string[];
   onOpen: (item: DayItem) => void;
 }) {
   const { day, items } = group;
@@ -251,7 +258,10 @@ function DayCard({
   }));
 
   return (
-    <div className="flex flex-col gap-2 p-3 rounded-xl bg-zinc-100 dark:bg-white/5 dark:border dark:border-white/10">
+    <div
+      id={dayCardId(day)}
+      className="flex flex-col gap-2 p-3 rounded-xl bg-zinc-100 dark:bg-white/5 dark:border dark:border-white/10 scroll-mt-3"
+    >
       <div className="flex items-center gap-2 text-sm font-semibold">
         <span>✦ {dayLabel(day)}</span>
         {isToday && (
@@ -259,6 +269,7 @@ function DayCard({
             Today
           </span>
         )}
+        <ShareDayButton day={day} regions={regions} />
       </div>
 
       <div className="relative h-4">
@@ -324,13 +335,13 @@ function TabRow({
   );
 }
 
-// Shared links carry the regions too, since the week alone would otherwise show
+// Shared links carry the regions too, since the day alone would otherwise show
 // whatever regions the recipient last had selected.
 function regionParam(regions: string[]): string {
   return REGIONS.every((region) => regions.includes(region)) ? "all" : regions.join(",");
 }
 
-function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }) {
+function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
   const [, setSearchParams] = useSearchParams();
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
 
@@ -341,7 +352,7 @@ function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }
   }, [shareState]);
 
   async function share() {
-    const params = new URLSearchParams({ week: week.key, region: regionParam(regions) });
+    const params = new URLSearchParams({ day, region: regionParam(regions) });
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
 
     // Put the params in the address bar too, so the link is still recoverable if
@@ -351,7 +362,7 @@ function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }
     // Phones get the native share sheet; everything else copies the link.
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${week.label} | The Rave Roster`, url });
+        await navigator.share({ title: `${dayLabel(day)} | The Rave Roster`, url });
         return;
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") return;
@@ -367,7 +378,7 @@ function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }
   }
 
   return (
-    <Button variant="secondary" size="sm" onClick={share} className="flex-none">
+    <Button variant="secondary" size="sm" onClick={share} className="flex-none ml-auto">
       <Share2Icon />
       <span>
         {shareState === "idle"
@@ -385,8 +396,16 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const [searchParams] = useSearchParams();
   const { show } = useUrlDialogParam("event");
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
-  // Read once, on mount: a shared link opens on its week, then the tabs own the state.
-  const [activeWeek, setActiveWeek] = useState<string | null>(() => searchParams.get("week"));
+  // Read once, on mount: a shared link opens on its day's week, then the tabs own the state.
+  // Older links shared a whole week rather than a day, so fall back to that.
+  const [sharedDay] = useState(() => searchParams.get("day"));
+  const [activeWeek, setActiveWeek] = useState<string | null>(() =>
+    sharedDay ? weekKey(sharedDay) : searchParams.get("week")
+  );
+
+  useEffect(() => {
+    if (sharedDay) document.getElementById(dayCardId(sharedDay))?.scrollIntoView({ block: "start" });
+  }, [sharedDay]);
 
   const filteredEvents = useMemo(
     () =>
@@ -424,16 +443,17 @@ export function CalendarView({ events }: { events: Event[]; }) {
   return (
     <div className="flex flex-col gap-3">
       <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
-          <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
-        </div>
-        <ShareWeekButton week={currentWeek} regions={selectedRegions} />
-      </div>
+      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (
-          <DayCard key={group.day} group={group} today={today} onOpen={(item) => show(itemDialogId(item))} />
+          <DayCard
+            key={group.day}
+            group={group}
+            today={today}
+            regions={selectedRegions}
+            onOpen={(item) => show(itemDialogId(item))}
+          />
         ))}
       </div>
 

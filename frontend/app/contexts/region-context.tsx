@@ -35,21 +35,29 @@ function parseRegionParam(param: string | null): string[] | null {
   return regions.length > 0 ? regions : null;
 }
 
-function initialRegions(): string[] | null {
-  const fromQuery = parseRegionParam(new URLSearchParams(window.location.search).get("region"));
-  if (fromQuery) return fromQuery;
-
-  // null on first visit: the visitor has to pick their zones first.
-  return loadSelectedRegions();
+function regionsFromQuery(): string[] | null {
+  return parseRegionParam(new URLSearchParams(window.location.search).get("region"));
 }
 
 export function RegionProvider({ children }: { children: React.ReactNode }) {
   const [searchParams, setSearchParams] = useSearchParams();
   // Initialised synchronously so the persist effect below can never write the
   // fallback over a stored selection (StrictMode runs mount effects twice).
-  const [initial] = useState(initialRegions);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(initial ?? []);
-  const [firstVisit, setFirstVisit] = useState(initial === null);
+  const [stored] = useState(loadSelectedRegions);
+  const [shared] = useState(regionsFromQuery);
+  // A brand new visitor adopts a shared link's regions as their own; null means
+  // they have to pick their zones first.
+  const [savedRegions, setSavedRegions] = useState<string[]>(stored ?? shared ?? []);
+  // A returning visitor only sees the shared regions while they browse, so their own
+  // selection survives. Changing the region filter makes it theirs again.
+  const [sharedRegions, setSharedRegions] = useState(stored ? shared : null);
+  const [firstVisit, setFirstVisit] = useState(stored === null && shared === null);
+  const selectedRegions = sharedRegions ?? savedRegions;
+
+  const setSelectedRegions: React.Dispatch<React.SetStateAction<string[]>> = (action) => {
+    setSavedRegions(typeof action === "function" ? action(selectedRegions) : action);
+    setSharedRegions(null);
+  };
   const { pathname } = useLocation();
 
   useEffect(() => {
@@ -68,8 +76,8 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Nothing is stored until the first-visit screen is submitted, so it shows again on reload.
     if (firstVisit) return;
-    localStorage.setItem("selectedRegions", JSON.stringify(selectedRegions));
-  }, [selectedRegions, firstVisit]);
+    localStorage.setItem("selectedRegions", JSON.stringify(savedRegions));
+  }, [savedRegions, firstVisit]);
 
   // A shared event link goes straight to the event; the region picker waits
   // until the visitor moves on to a page that lists events.

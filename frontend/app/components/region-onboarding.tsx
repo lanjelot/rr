@@ -112,9 +112,9 @@ export function RegionOnboarding({ onSubmit }: { onSubmit: (regions: string[]) =
       </div>
 
       <div className="text-center">
-        <h1 className="text-xl font-semibold">Where do you rave?</h1>
+        <h1 className="text-xl font-semibold">Find events near you</h1>
         <p className="text-sm text-muted-foreground">
-          Pick one or more zones to see their events.
+          Pick the regions where you're chasing vibes.
         </p>
       </div>
 
