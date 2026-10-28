@@ -6,7 +6,8 @@ import { REGIONS, type Event } from "~/lib/data";
 import { cn, isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { Button } from "~/components/ui/button";
-import { EventDialog } from "./event-details-card";
+import { EventListDialog } from "./event-details-card";
+import { useUrlDialogParam } from "~/hooks/url-dialog";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
 const WINDOW_START_HOUR = 10;
@@ -117,35 +118,40 @@ function buildDayGroups(events: Event[]): DayGroup[] {
 }
 
 // The dialog param is keyed on the day as well as the event, so each bar of a
-// multi-day event opens only its own dialog.
-function EventBar({ event, day, startMin, endMin }: DayItem) {
+// multi-day event is its own entry in the week's EventListDialog, and stepping
+// carries on from the bar that was clicked.
+function itemDialogId({ event, day }: { event: Event; day: string }): string {
+  return `${event.id}-${day}`;
+}
+
+function EventBar({ item, onClick }: { item: DayItem; onClick: () => void }) {
+  const { event, startMin, endMin } = item;
   const leftPct = (startMin / WINDOW_MINUTES) * 100;
   const widthPct = ((endMin - startMin) / WINDOW_MINUTES) * 100;
 
   return (
-    <EventDialog event={event} dialogId={`${event.id}-${day}`}>
-      <button
-        type="button"
-        className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 min-w-0 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
-        style={{
-          left: `${leftPct}%`,
-          width: `${widthPct}%`,
-          maxWidth: `calc(100% - ${leftPct}%)`,
-        }}
-      >
-        <img
-          src={event.flyer}
-          alt=""
-          loading="lazy"
-          className="flex-none size-10 rounded-md object-cover"
-        />
-        <div className="flex flex-col min-w-0 leading-tight">
-          <span className="text-xs font-medium truncate">{event.name}</span>
-          {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
-          <span className="text-[11px] text-muted-foreground truncate">{event.location}</span>
-        </div>
-      </button>
-    </EventDialog>
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 min-w-0 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
+      style={{
+        left: `${leftPct}%`,
+        width: `${widthPct}%`,
+        maxWidth: `calc(100% - ${leftPct}%)`,
+      }}
+    >
+      <img
+        src={event.flyer}
+        alt=""
+        loading="lazy"
+        className="flex-none size-10 rounded-md object-cover"
+      />
+      <div className="flex flex-col min-w-0 leading-tight">
+        <span className="text-xs font-medium truncate">{event.name}</span>
+        {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
+        <span className="text-xs text-muted-foreground truncate">{event.location}</span>
+      </div>
+    </button>
   );
 }
 
@@ -227,7 +233,15 @@ function groupByMonth(weeks: WeekTab[]): MonthTab[] {
     .map(([key, monthWeeks]) => ({ key, label: monthLabel(key), weeks: monthWeeks }));
 }
 
-function DayCard({ group, today }: { group: DayGroup; today: string }) {
+function DayCard({
+  group,
+  today,
+  onOpen,
+}: {
+  group: DayGroup;
+  today: string;
+  onOpen: (item: DayItem) => void;
+}) {
   const { day, items } = group;
   const isToday = day === today;
 
@@ -272,7 +286,7 @@ function DayCard({ group, today }: { group: DayGroup; today: string }) {
 
         {items.map((item) => (
           <div key={item.event.id} className="relative h-14">
-            <EventBar {...item} />
+            <EventBar item={item} onClick={() => onOpen(item)} />
           </div>
         ))}
       </div>
@@ -369,6 +383,7 @@ function ShareWeekButton({ week, regions }: { week: WeekTab; regions: string[] }
 export function CalendarView({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
   const [searchParams] = useSearchParams();
+  const { show } = useUrlDialogParam("event");
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   // Read once, on mount: a shared link opens on its week, then the tabs own the state.
   const [activeWeek, setActiveWeek] = useState<string | null>(() => searchParams.get("week"));
@@ -400,6 +415,9 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const currentWeek =
     currentMonth.weeks.find((week) => week.key === activeWeek) ?? currentMonth.weeks[0];
 
+  // The week's bars in the order they're laid out, for the dialog to step through.
+  const weekItems = currentWeek.groups.flatMap((group) => group.items);
+
   // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
   const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
 
@@ -415,9 +433,14 @@ export function CalendarView({ events }: { events: Event[]; }) {
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (
-          <DayCard key={group.day} group={group} today={today} />
+          <DayCard key={group.day} group={group} today={today} onOpen={(item) => show(itemDialogId(item))} />
         ))}
       </div>
+
+      <EventListDialog
+        events={weekItems.map((item) => item.event)}
+        dialogId={(_, i) => itemDialogId(weekItems[i])}
+      />
     </div>
   );
 }

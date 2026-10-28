@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { useSearchParams } from "react-router";
+import { useLocation, useSearchParams } from "react-router";
 import { REGIONS } from "~/lib/data";
 import { RegionOnboarding } from "~/components/region-onboarding";
 
@@ -50,6 +50,7 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
   const [initial] = useState(initialRegions);
   const [selectedRegions, setSelectedRegions] = useState<string[]>(initial ?? []);
   const [firstVisit, setFirstVisit] = useState(initial === null);
+  const { pathname } = useLocation();
 
   useEffect(() => {
     if (searchParams.get("region")) {
@@ -70,7 +71,9 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("selectedRegions", JSON.stringify(selectedRegions));
   }, [selectedRegions, firstVisit]);
 
-  if (firstVisit) {
+  // A shared event link goes straight to the event; the region picker waits
+  // until the visitor moves on to a page that lists events.
+  if (firstVisit && !/^\/events\/[^/]+\/?$/.test(pathname)) {
     return (
       <RegionOnboarding
         onSubmit={(regions) => {

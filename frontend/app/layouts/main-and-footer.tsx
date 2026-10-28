@@ -6,7 +6,9 @@ import { FooterNavLink } from "~/components/footer-nav-link";
 import { ThemeToggle } from "~/components/theme-toggle";
 import { ThemeProvider } from "~/contexts/theme-context";
 import { RegionProvider, useRegion } from "~/contexts/region-context";
+import { BookmarksProvider } from "~/contexts/bookmarks-context";
 import { RegionSelection } from "~/components/region-selection-multiple";
+import { NavSearch } from "~/components/nav-search";
 
 const ROUTES_WITHOUT_REGION_SELECTION = ["/map", "/about"];
 
@@ -28,6 +30,7 @@ function Navbar() {
         The Rave Roster
       </Link>
       <div className="ms-auto flex items-center gap-2">
+        <NavSearch />
         {showRegionSelection && (
           <RegionSelection selectedRegions={selectedRegions} onSelectedRegions={setSelectedRegions} />
         )}
@@ -42,46 +45,48 @@ export default function Component(_: Route.ComponentProps) {
   return (
     <ThemeProvider>
       <RegionProvider>
-        <div className="max-w-3xl mx-auto">
-          <main className="pb-20 min-h-screen p-3">
-            <Navbar />
+        <BookmarksProvider>
+          <div className="max-w-3xl mx-auto">
+            <main className="pb-20 min-h-screen p-3">
+              <Navbar />
 
-            {/* <hr className="my-3 mx-auto w-full" /> */}
+              {/* <hr className="my-3 mx-auto w-full" /> */}
 
-            <Outlet />
-          </main>
+              <Outlet />
+            </main>
 
-          <footer className="fixed bottom-0 left-0 right-0 backdrop-blur-md bg-zinc-100/80 border-t border-black/10 dark:bg-zinc-900/80 dark:border-t dark:border-white/10">
-            <div className="max-w-3xl mx-auto flex gap-3 justify-evenly">
-              <FooterNavLink
-                to="/"
-                label="Home"
-                icon={<HomeIcon className="size-5" />}
-              />
-              <FooterNavLink
-                to="/events"
-                label="Upcoming"
-                icon={<BeakerIcon className="size-5" />}
-              />
-              <FooterNavLink
-                to="/calendar"
-                label="Calendar"
-                icon={<CalendarDaysIcon className="size-5" />}
-              />
-              <FooterNavLink
-                to="/map"
-                label="Map"
-                icon={<MapIcon className="size-5" />}
-              />
-              <FooterNavLink
-                to="/about"
-                label="About"
-                icon={<InformationCircleIcon className="size-5" />}
-              // icon={<EllipsisVerticalIcon className="size-5" />}
-              />
-            </div>
-          </footer>
-        </div>
+            <footer className="fixed bottom-0 left-0 right-0 backdrop-blur-md bg-zinc-100/80 border-t border-black/10 dark:bg-zinc-900/80 dark:border-t dark:border-white/10">
+              <div className="max-w-3xl mx-auto flex gap-3 justify-evenly">
+                <FooterNavLink
+                  to="/"
+                  label="Home"
+                  icon={<HomeIcon className="size-5" />}
+                />
+                <FooterNavLink
+                  to="/events"
+                  label="Events"
+                  icon={<BeakerIcon className="size-5" />}
+                />
+                <FooterNavLink
+                  to="/calendar"
+                  label="Calendar"
+                  icon={<CalendarDaysIcon className="size-5" />}
+                />
+                <FooterNavLink
+                  to="/map"
+                  label="Map"
+                  icon={<MapIcon className="size-5" />}
+                />
+                <FooterNavLink
+                  to="/about"
+                  label="About"
+                  icon={<InformationCircleIcon className="size-5" />}
+                // icon={<EllipsisVerticalIcon className="size-5" />}
+                />
+              </div>
+            </footer>
+          </div>
+        </BookmarksProvider>
       </RegionProvider>
     </ThemeProvider>
   );
