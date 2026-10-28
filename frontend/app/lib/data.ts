@@ -70,6 +70,19 @@ export const REGION_LABELS: Record<string, string> = {
   NT: "NT",
 };
 
+// Coarser zones offered on the first-visit screen, each covering one or more regions.
+export const ZONES: { id: string; label: string; regions: string[] }[] = [
+  { id: "WA", label: "WA", regions: ["WA"] },
+  { id: "NT", label: "NT", regions: ["NT"] },
+  { id: "FQLD", label: "Far North QLD", regions: ["NQLD"] },
+  { id: "QLD+NNSW", label: "QLD + North NSW", regions: ["QLD", "NNSW"] },
+  { id: "NSW", label: "NSW", regions: ["NSW"] },
+  { id: "ACT", label: "ACT", regions: ["ACT"] },
+  { id: "VIC", label: "VIC", regions: ["VIC"] },
+  { id: "TAS", label: "TAS", regions: ["TAS"] },
+  { id: "SA", label: "SA", regions: ["SA"] },
+];
+
 export function regionLabel(region: string): string {
   return REGION_LABELS[region] ?? region;
 }

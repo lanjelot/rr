@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useSearchParams } from "react-router";
 import { REGIONS } from "~/lib/data";
-import { lookupLocation, regionsForLocation } from "~/lib/geo";
+import { RegionOnboarding } from "~/components/region-onboarding";
 
 type RegionContextType = {
   selectedRegions: string[];
@@ -35,19 +35,12 @@ function parseRegionParam(param: string | null): string[] | null {
   return regions.length > 0 ? regions : null;
 }
 
-function initialRegions(): { regions: string[]; detectFromIp: boolean } {
+function initialRegions(): string[] | null {
   const fromQuery = parseRegionParam(new URLSearchParams(window.location.search).get("region"));
-  if (fromQuery) return { regions: fromQuery, detectFromIp: false };
+  if (fromQuery) return fromQuery;
 
-  const stored = loadSelectedRegions();
-  if (stored) return { regions: stored, detectFromIp: false };
-
-  // First visit: show everything until the IP lookup narrows it down.
-  return { regions: REGIONS, detectFromIp: true };
-}
-
-function sameRegions(a: string[], b: string[]): boolean {
-  return a.length === b.length && a.every((region, i) => region === b[i]);
+  // null on first visit: the visitor has to pick their zones first.
+  return loadSelectedRegions();
 }
 
 export function RegionProvider({ children }: { children: React.ReactNode }) {
@@ -55,23 +48,8 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
   // Initialised synchronously so the persist effect below can never write the
   // fallback over a stored selection (StrictMode runs mount effects twice).
   const [initial] = useState(initialRegions);
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(initial.regions);
-
-  useEffect(() => {
-    if (!initial.detectFromIp) return;
-
-    let cancelled = false;
-    lookupLocation().then((location) => {
-      if (cancelled || !location) return;
-      const regions = regionsForLocation(location);
-      // Don't clobber a selection the visitor made while the lookup was in flight.
-      setSelectedRegions((current) => (sameRegions(current, initial.regions) ? regions : current));
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  const [selectedRegions, setSelectedRegions] = useState<string[]>(initial ?? []);
+  const [firstVisit, setFirstVisit] = useState(initial === null);
 
   useEffect(() => {
     if (searchParams.get("region")) {
@@ -87,8 +65,21 @@ export function RegionProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    // Nothing is stored until the first-visit screen is submitted, so it shows again on reload.
+    if (firstVisit) return;
     localStorage.setItem("selectedRegions", JSON.stringify(selectedRegions));
-  }, [selectedRegions]);
+  }, [selectedRegions, firstVisit]);
+
+  if (firstVisit) {
+    return (
+      <RegionOnboarding
+        onSubmit={(regions) => {
+          setSelectedRegions(regions);
+          setFirstVisit(false);
+        }}
+      />
+    );
+  }
 
   return (
     <RegionContext.Provider value={{ selectedRegions, setSelectedRegions }}>
