@@ -60,28 +60,28 @@ export default function Component(_: Route.ComponentProps) {
                 <FooterNavLink
                   to="/"
                   label="Home"
-                  icon={<HomeIcon className="size-5" />}
+                  icon={<HomeIcon className="size-6" />}
                 />
                 <FooterNavLink
                   to="/events"
                   label="Events"
-                  icon={<BeakerIcon className="size-5" />}
+                  icon={<BeakerIcon className="size-6" />}
                 />
                 <FooterNavLink
                   to="/calendar"
                   label="Calendar"
-                  icon={<CalendarDaysIcon className="size-5" />}
+                  icon={<CalendarDaysIcon className="size-6" />}
                 />
                 <FooterNavLink
                   to="/map"
                   label="Map"
-                  icon={<MapIcon className="size-5" />}
+                  icon={<MapIcon className="size-6" />}
                 />
                 <FooterNavLink
                   to="/about"
                   label="About"
-                  icon={<InformationCircleIcon className="size-5" />}
-                // icon={<EllipsisVerticalIcon className="size-5" />}
+                  icon={<InformationCircleIcon className="size-6" />}
+                // icon={<EllipsisVerticalIcon className="size-6" />}
                 />
               </div>
             </footer>

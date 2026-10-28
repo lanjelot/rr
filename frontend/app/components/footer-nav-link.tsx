@@ -19,7 +19,7 @@ export function FooterNavLink({ to, label, icon }: FooterNavLinkProps) {
       }
     >
       {icon}
-      <span className="text-xs">{label}</span>
+      <span className="text-sm">{label}</span>
     </NavLink>
   );
 }
