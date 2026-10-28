@@ -246,7 +246,7 @@ export function EventDetailsCard({ event, children }: { event: Event; children?:
 
       {/* Pinned to the card's corner rather than following the details, so they
           stay put whether or not the details are long enough to scroll. */}
-      <div className="absolute bottom-3 right-4 flex items-center gap-3 text-muted-foreground">
+      <div className="absolute bottom-3 right-4 flex items-center gap-5 text-muted-foreground">
         <ShareEventButton event={event} />
         <button
           type="button"
