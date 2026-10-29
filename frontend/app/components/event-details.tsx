@@ -34,7 +34,7 @@ export function EventDetails({ event }: { event: Event; }) {
         </Button>
         <div className="relative">
           <img
-            src={event.flyer}
+            src={event.preview}
             alt=""
             className="w-full object-cover h-96 rounded-xl"
             onClick={() => setOpen(true)}

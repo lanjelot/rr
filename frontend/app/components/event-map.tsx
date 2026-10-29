@@ -355,7 +355,7 @@ function EventMarkerLink({ event }: { event: Event; }) {
       className="flex items-center gap-2 w-40"
       style={{ color: "inherit" }}
     >
-      <img src={event.flyer} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+      <img src={event.preview} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
       <div className="flex flex-col leading-tight overflow-hidden">
         <div className="font-semibold truncate">{event.name}</div>
         <div className="text-xs">{event.location}</div>

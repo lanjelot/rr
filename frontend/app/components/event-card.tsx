@@ -18,7 +18,7 @@ export function EventCard({ event }: { event: Event; }) {
       <div className="w-full mx-auto flex flex-col gap-3 pt-0 border rounded-xl">
         <div className="w-full relative">
           <img
-            src={event.flyer}
+            src={event.preview}
             alt=""
             className="object-cover h-96 w-full rounded-t-xl"
             onClick={() => setOpen(true)}

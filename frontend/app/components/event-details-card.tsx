@@ -200,7 +200,7 @@ export function EventDetailsCard({ event, children }: { event: Event; children?:
             leaving it up beside the new event's details until the new one loads. */}
         <img
           key={event.id}
-          src={event.flyer}
+          src={event.preview}
           alt=""
           className="w-full object-cover h-80 rounded-t-xl"
         />
