@@ -77,7 +77,7 @@ export function EventList({ events }: { events: Event[]; }) {
                 onRemove={() => setFilters(filters.filter((_, j) => j !== i))}
               />
             ))}
-            <AddSearchChip onClick={() => setRefining(true)} />
+            <AddSearchChip hasFilters={filters.length > 0} onClick={() => setRefining(true)} />
           </div>
 
           <div className="flex items-center gap-2">

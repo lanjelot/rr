@@ -1,4 +1,4 @@
-import { PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { FunnelIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { SEARCH_LABELS, type SearchParam } from "~/lib/search";
 
@@ -64,14 +64,15 @@ export function SearchChip({
   );
 }
 
-export function AddSearchChip({ onClick }: { onClick: () => void }) {
+// Funnel when no filters are set yet, "+" once there are some to add to.
+export function AddSearchChip({ hasFilters, onClick }: { hasFilters: boolean; onClick: () => void }) {
   return (
     <button
       onClick={onClick}
       className={`${CHIP_CLASS} px-2 cursor-pointer hover:bg-secondary/80`}
       aria-label="Add search filter"
     >
-      <PlusIcon className="size-4" />
+      {hasFilters ? <PlusIcon className="size-4" /> : <FunnelIcon className="size-4" />}
     </button>
   );
 }

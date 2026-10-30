@@ -16,7 +16,7 @@ export const SEARCH_LABELS: Record<SearchParam, string> = {
   artist: "Artist",
   place: "Venue",
   genre: "Genre",
-  q: "Search",
+  q: "Any",
 };
 
 export const MIN_QUERY_LENGTH = 2;

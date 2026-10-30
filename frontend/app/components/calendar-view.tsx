@@ -1,11 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Share2Icon } from "lucide-react";
+import { BookmarkIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import { REGIONS, type Event } from "~/lib/data";
 import { cn, isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { Button } from "~/components/ui/button";
+import { Toggle } from "~/components/ui/toggle";
+import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 
@@ -394,7 +398,9 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 export function CalendarView({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
   const [searchParams] = useSearchParams();
-  const { show } = useUrlDialogParam("event");
+  const { value: openDialogId, show } = useUrlDialogParam("event");
+  const { isBookmarked } = useBookmarks();
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   // Read once, on mount: a shared link opens on its day's week, then the tabs own the state.
   // Older links shared a whole week rather than a day, so fall back to that.
@@ -410,19 +416,42 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const filteredEvents = useMemo(
     () =>
       events
-        .filter((event) => selectedRegions.includes(event.region) && (isThisShowWeek(event) || isFutureEvent(event)))
+        .filter((event) =>
+          selectedRegions.includes(event.region) &&
+          (isThisShowWeek(event) || isFutureEvent(event)) &&
+          // Keep the open event while its dialog is up, so un-bookmarking it there
+          // doesn't pull it out from under the dialog.
+          (!bookmarkedOnly || isBookmarked(event.id) || openDialogId?.startsWith(`${event.id}-`))
+        )
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
-    [events, selectedRegions]
+    [events, selectedRegions, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
   const dayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
   const weeks = useMemo(() => groupByWeek(dayGroups), [dayGroups]);
   const months = useMemo(() => groupByMonth(weeks), [weeks]);
 
+  const bookmarkToggle = (
+    <Toggle
+      variant="outline"
+      pressed={bookmarkedOnly}
+      onPressedChange={setBookmarkedOnly}
+      aria-label="Bookmarked only"
+      title="Bookmarked only"
+      className="flex-none rounded-full"
+    >
+      {bookmarkedOnly ? <BookmarkSolidIcon className="size-4" /> : <BookmarkIcon className="size-4" />}
+    </Toggle>
+  );
+
+  // Keep the toggle on screen when it's what emptied the calendar, so it can be switched back off.
   if (months.length === 0) {
     return (
-      <div className="text-center text-muted-foreground py-10">
-        No events to show, check your filters.
+      <div className="flex flex-col gap-3">
+        {bookmarkedOnly && <div className="flex justify-end">{bookmarkToggle}</div>}
+        <div className="text-center text-muted-foreground py-10">
+          {bookmarkedOnly ? "No bookmarked events to show." : "No events to show, check your filters."}
+        </div>
       </div>
     );
   }
@@ -443,7 +472,12 @@ export function CalendarView({ events }: { events: Event[]; }) {
   return (
     <div className="flex flex-col gap-3">
       <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+        </div>
+        {bookmarkToggle}
+      </div>
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (

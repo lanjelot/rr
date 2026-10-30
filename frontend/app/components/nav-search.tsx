@@ -69,7 +69,9 @@ export function SearchDialog({
         <CommandList className="max-h-[60vh]">
           {!showSuggestions ? (
             <div className="py-6 text-center text-sm text-muted-foreground">
-              Type at least {MIN_QUERY_LENGTH} letters to search.
+              {query.trim()
+                ? "Keep typing..."
+                : "Find events by name, artist, venue or genre."}
             </div>
           ) : events === null ? (
             <div className="py-6 text-center text-sm text-muted-foreground">Loading events...</div>
