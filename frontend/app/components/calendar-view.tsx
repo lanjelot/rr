@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Share2Icon } from "lucide-react";
-import { BookmarkIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon, CheckIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import { REGIONS, type Event } from "~/lib/data";
@@ -383,14 +383,11 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 
   return (
     <Button variant="secondary" size="sm" onClick={share} className="flex-none ml-auto">
-      <Share2Icon />
-      <span>
-        {shareState === "idle"
-          ? "Share"
-          : shareState === "copied"
-            ? "Link copied"
-            : "Couldn't copy, share link in address bar"}
-      </span>
+      {shareState === "idle"
+        ? <Share2Icon />
+        : shareState === "copied"
+          ? <CheckIcon />
+          : "Couldn't copy, share link in address bar"}
     </Button>
   );
 }
