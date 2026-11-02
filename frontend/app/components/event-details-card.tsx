@@ -5,9 +5,8 @@ import { useUrlDialog, useUrlDialogParam } from "~/hooks/url-dialog";
 import { DateBadge, RegionBadge, type EventDay } from "./event-badges";
 import { TicketLink } from "./ticket-link";
 import { Dialog, DialogClose, DialogContent, DialogPortal, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { BookmarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon } from "@heroicons/react/24/outline";
-import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
-import { useBookmarks } from "~/contexts/bookmarks-context";
+import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { BookmarkButton } from "./bookmark-button";
 
 // Wraps `children` as the trigger for this event's details dialog. Open state
 // lives in the URL, so Back closes the dialog rather than leaving the page.
@@ -193,9 +192,6 @@ function EventDialogContent({ className, ...props }: ComponentProps<typeof Dialo
 // Renders DialogTitle/DialogClose, so it has to live inside a <DialogContent>.
 // `children` are overlaid on the flyer, for EventListDialog's counter.
 export function EventDetailsCard({ event, eventDay, children }: { event: Event; eventDay?: EventDay; children?: ReactNode }) {
-  const { isBookmarked, toggleBookmark } = useBookmarks();
-  const bookmarked = isBookmarked(event.id);
-
   return (
     <div className="relative flex-1 min-h-0 flex flex-col gap-3">
       <div className="relative shrink-0">
@@ -250,16 +246,7 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
           stay put whether or not the details are long enough to scroll. */}
       <div className="absolute bottom-3 right-4 flex items-center gap-5 text-muted-foreground">
         <ShareEventButton event={event} />
-        <button
-          type="button"
-          aria-pressed={bookmarked}
-          aria-label={bookmarked ? "Remove bookmark" : "Bookmark event"}
-          title={bookmarked ? "Remove bookmark" : "Bookmark event"}
-          onClick={() => toggleBookmark(event.id)}
-          className="hover:text-foreground cursor-pointer"
-        >
-          {bookmarked ? <BookmarkSolidIcon className="size-6" /> : <BookmarkIcon className="size-6" />}
-        </button>
+        <BookmarkButton eventId={event.id} />
       </div>
     </div>
   );

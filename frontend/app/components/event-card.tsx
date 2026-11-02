@@ -5,6 +5,7 @@ import { renderTextWithLinks, renderTextWithLinksAndBreaks } from "./render-text
 import { useFlyerOverlay, FlyerOverlay } from "../hooks/flyer-overlay";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { TicketLink } from "./ticket-link";
+import { BookmarkButton } from "./bookmark-button";
 
 const NOTES_PREVIEW_LENGTH = 256;
 
@@ -15,7 +16,7 @@ export function EventCard({ event }: { event: Event; }) {
 
   return (
     <>
-      <div className="w-full mx-auto flex flex-col gap-3 pt-0 border rounded-xl">
+      <div className="relative w-full mx-auto flex flex-col gap-3 pt-0 border rounded-xl">
         <div className="w-full relative">
           <img
             src={event.preview}
@@ -80,6 +81,8 @@ export function EventCard({ event }: { event: Event; }) {
             </div>
           </div>
         </div>
+
+        <BookmarkButton eventId={event.id} className="absolute bottom-3 right-4 text-muted-foreground" />
       </div>
 
       <FlyerOverlay src={event.flyer} open={open} onClose={() => setOpen(false)} />
