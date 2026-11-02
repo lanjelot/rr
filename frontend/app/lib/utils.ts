@@ -36,13 +36,15 @@ export function isHappeningNow(
 export function isThisWeek(
   event: Event
 ): boolean {
-  return moment().isSame(moment(event.start_at), 'isoWeek');
+  const start = moment.parseZone(event.start_at);
+  return moment().utcOffset(start.utcOffset()).isSame(start, 'isoWeek');
 }
 
 export function isNextWeek(
   event: Event
 ): boolean {
-  return moment().add(1, 'week').isSame(moment(event.start_at), 'isoWeek');
+  const start = moment.parseZone(event.start_at);
+  return moment().utcOffset(start.utcOffset()).add(1, 'week').isSame(start, 'isoWeek');
 }
 
 export function eventDate(
@@ -51,7 +53,7 @@ export function eventDate(
   const isMultiDay = (new Date(event.finish_at).getTime() - new Date(event.start_at).getTime()) >= 24 * 60 * 60 * 1000;
   if (!isMultiDay) return formatDate(event.start_at);
 
-  const sameMonth = moment(event.start_at).isSame(moment(event.finish_at), 'month');
+  const sameMonth = moment.parseZone(event.start_at).isSame(moment.parseZone(event.finish_at), 'month');
   const startFmt = sameMonth ? "ddd D" : "ddd D MMM";
   return `${formatDate(event.start_at, startFmt)} - ${formatDate(event.finish_at)}`;
 }
@@ -82,4 +84,7 @@ export function eventTime(
   if (!isMultiDay(event)) return `${formatTime(event.start_at)} - ${formatTime(event.finish_at)}`;
 
   return `${formatTime(event.start_at, " (ddd)")} - ${formatTime(event.finish_at, " (ddd)")}`;
+}
+export function eventLineup(event: Event): string {
+  return [event.artists, event.djs].filter(Boolean).join(", ");
 }

@@ -11,6 +11,7 @@ import { Button } from "~/components/ui/button";
 import { Toggle } from "~/components/ui/toggle";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
+import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
@@ -68,15 +69,21 @@ function eventShowDays(event: Event): string[] {
   return days;
 }
 
-function dayWindowStart(day: string): moment.Moment {
-  return moment(day, "YYYY-MM-DD").startOf("day").add(WINDOW_START_HOUR, "hours");
+// The window has to be anchored in the event's own UTC offset, not the browser's, or a
+// viewer in another timezone sees e.g. a QLD event finishing at 10am spill into the next
+// day. The start day uses start_at's offset and later days finish_at's, so a DST change
+// mid-event still puts the boundaries at 10am local.
+function dayWindowStart(event: Event, day: string): moment.Moment {
+  const ref = day === showDay(event.start_at) ? event.start_at : event.finish_at;
+  const offset = moment.parseZone(ref).format("Z");
+  return moment.parseZone(`${day}T00:00:00${offset}`).add(WINDOW_START_HOUR, "hours");
 }
 
 // Clips an event to a day's window, or returns null when it doesn't actually overlap it.
 // An event finishing at exactly 10am, or starting at exactly 6am, touches the neighbouring
 // day's window without spending any time in it, and would otherwise leave that day empty.
 function clipToDay(event: Event, day: string): DayItem | null {
-  const windowStart = dayWindowStart(day);
+  const windowStart = dayWindowStart(event, day);
   const startMin = Math.max(0, moment.parseZone(event.start_at).diff(windowStart, "minutes"));
   const endMin = Math.min(
     WINDOW_MINUTES,
@@ -205,7 +212,10 @@ function weekLabel(weekStart: string): string {
 // For example, at 5am on a Tuesday the current week is still the previous one, which
 // matches how the tabs and the "Today" tag behave.
 function isThisShowWeek(event: Event): boolean {
-  const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
+  const today = moment()
+    .utcOffset(moment.parseZone(event.start_at).utcOffset())
+    .subtract(WINDOW_START_HOUR, "hours")
+    .format("YYYY-MM-DD");
   return weekKey(showDay(event.start_at)) === weekKey(today);
 }
 
@@ -425,6 +435,11 @@ export function CalendarView({ events }: { events: Event[]; }) {
   );
 
   const dayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
+  // Numbered across every week, so a festival spanning two weeks counts on.
+  const eventDay = useMemo(
+    () => eventDayNumberer(dayGroups.flatMap((group) => group.items)),
+    [dayGroups]
+  );
   const weeks = useMemo(() => groupByWeek(dayGroups), [dayGroups]);
   const months = useMemo(() => groupByMonth(weeks), [weeks]);
 
@@ -491,6 +506,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
       <EventListDialog
         events={weekItems.map((item) => item.event)}
         dialogId={(_, i) => itemDialogId(weekItems[i])}
+        eventDay={(event, i) => eventDay(event, weekItems[i].day)}
       />
     </div>
   );

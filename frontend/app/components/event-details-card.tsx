@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import type { Event } from "~/lib/data";
-import { cn, eventDate, eventTime, isHappeningNow } from "~/lib/utils";
+import { cn, eventDate, eventLineup, eventTime, isHappeningNow } from "~/lib/utils";
 import { useUrlDialog, useUrlDialogParam } from "~/hooks/url-dialog";
-import { DateBadge, RegionBadge } from "./event-badges";
+import { DateBadge, RegionBadge, type EventDay } from "./event-badges";
 import { TicketLink } from "./ticket-link";
 import { Dialog, DialogClose, DialogContent, DialogPortal, DialogTitle, DialogTrigger } from "./ui/dialog";
 import { BookmarkIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon } from "@heroicons/react/24/outline";
@@ -48,12 +48,15 @@ export function EventDialog({
 //
 // dialogId is the param value for each entry, defaulting to the event id; the
 // calendar keys on the day too, as a multi-day event is an entry per day it spans.
+// eventDay says which of those days an entry is, for the date badge.
 export function EventListDialog({
   events,
   dialogId = (event) => event.id,
+  eventDay,
 }: {
   events: Event[];
   dialogId?: (event: Event, index: number) => number | string;
+  eventDay?: (event: Event, index: number) => EventDay;
 }) {
   const { value, replace, close } = useUrlDialogParam("event");
 
@@ -105,7 +108,7 @@ export function EventListDialog({
             step(dx < 0 ? 1 : -1);
           }}
         >
-          <EventDetailsCard event={event}>
+          <EventDetailsCard event={event} eventDay={eventDay?.(event, shownIndex)}>
             <div className="absolute bottom-2 left-2 rounded-md bg-black/50 px-2 text-xs text-white">
               {shownIndex + 1} / {events.length}
             </div>
@@ -189,7 +192,7 @@ function EventDialogContent({ className, ...props }: ComponentProps<typeof Dialo
 // The body of the event dialog opened from a calendar bar or a thumbnail card.
 // Renders DialogTitle/DialogClose, so it has to live inside a <DialogContent>.
 // `children` are overlaid on the flyer, for EventListDialog's counter.
-export function EventDetailsCard({ event, children }: { event: Event; children?: ReactNode }) {
+export function EventDetailsCard({ event, eventDay, children }: { event: Event; eventDay?: EventDay; children?: ReactNode }) {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const bookmarked = isBookmarked(event.id);
 
@@ -205,7 +208,7 @@ export function EventDetailsCard({ event, children }: { event: Event; children?:
           className="w-full object-cover h-80 rounded-t-xl"
         />
         <div className="absolute top-2 left-2">
-          <DateBadge event={event} />
+          <DateBadge event={event} eventDay={eventDay} />
         </div>
         <div className="absolute top-2 right-2">
           <RegionBadge event={event} />
@@ -220,8 +223,7 @@ export function EventDetailsCard({ event, children }: { event: Event; children?:
         <DialogTitle className="text-center">{event.name}</DialogTitle>
         <div className="flex flex-col gap-3 text-sm text-muted-foreground">
           <ul>
-            {event.artists && <li>🎧 {event.artists}</li>}
-            {event.djs && <li>🎧 {event.djs}</li>}
+            {eventLineup(event) && <li>🎧 {eventLineup(event)}</li>}
             {event.promoter && <li>🌀 {event.promoter}</li>}
           </ul>
           <ul>

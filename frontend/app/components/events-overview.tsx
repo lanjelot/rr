@@ -3,6 +3,7 @@ import type { Event } from "~/lib/data";
 import { cn, isMultiDay } from "~/lib/utils";
 import { EventCompact } from "./event-compact";
 import { EventListDialog } from "./event-details-card";
+import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { useRegion } from "~/contexts/region-context";
 import { useSearchParams } from "react-router";
@@ -11,6 +12,8 @@ import { Button } from "./ui/button";
 import moment from 'moment';
 
 const DAY_FMT = "YYYY-MM-DD";
+// The hour a night's partying counts as over, matching the calendar's show day.
+const DAY_CUTOFF_HOUR = 10;
 
 // One group per calendar day, in the event's own timezone. A multi-day event
 // (a festival) is listed on every day it runs, not just the first, so it's
@@ -20,7 +23,11 @@ function groupEventsByDay(events: Event[]) {
 
   for (const event of events) {
     const start = moment.parseZone(event.start_at).startOf("day");
-    const finish = isMultiDay(event) ? moment.parseZone(event.finish_at) : start;
+    // Its last day is the one it's still going in before the morning cutoff,
+    // so a festival finishing at 10am Monday ends on the Sunday.
+    const finish = isMultiDay(event)
+      ? moment.parseZone(event.finish_at).subtract(DAY_CUTOFF_HOUR, "hours").subtract(1, "minute")
+      : start;
 
     for (const day = start.clone(); day.isSameOrBefore(finish, "day"); day.add(1, "day")) {
       const key = day.format(DAY_FMT);
@@ -148,6 +155,18 @@ function DayStrip({
   );
 }
 
+// The dialog steps through every upcoming day, so a multi-day event is an entry
+// per day it's listed on, keyed on the day too (as in the calendar). The day in
+// the param is also what the pager follows as the dialog steps across days.
+function dialogId(event: Event, day: string) {
+  return `${event.id}-${day}`;
+}
+
+function parseDialogId(value: string | null) {
+  const match = value?.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);
+  return match ? { id: match[1], day: match[2] } : null;
+}
+
 function DayPage({ day, events, week, render }: { day: string; events: Event[]; week: WeekLabel; render: boolean; }) {
   const { show } = useUrlDialogParam("event");
 
@@ -157,7 +176,7 @@ function DayPage({ day, events, week, render }: { day: string; events: Event[]; 
         {moment(day, DAY_FMT).format("dddd D MMMM")}
       </div>
       {render && events.map((event: Event) => (
-        <EventCompact key={event.id} event={event} onClick={() => show(event.id)} />
+        <EventCompact key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
       ))}
     </div>
   );
@@ -174,13 +193,30 @@ export function EventsOverview({ events }: { events: Event[]; }) {
   const today = moment().format(DAY_FMT);
   const groups = allGroups.filter(group => group.day >= today);
 
-  // Start on the day in the URL, else the day of a linked event (so a shared
-  // ?event= link opens its dialog), else the first upcoming day.
+  // Every upcoming day's events in order, for the dialog to step through.
+  const dialogEntries = groups.flatMap(group => group.events.map(event => ({ event, day: group.day })));
+  // Numbered over past days too, so a festival that started yesterday is on day 2.
+  const eventDay = eventDayNumberer(allGroups.flatMap(group => group.events.map(event => ({ event, day: group.day }))));
+
+  // Start on the open event's day, else the day in the URL, else the day of a
+  // plain ?event=<id> link, else the first upcoming day.
   const initialIndex = () => {
+    const openDay = parseDialogId(openEvent)?.day;
+    const byOpenDay = groups.findIndex(group => group.day === openDay);
+    if (byOpenDay !== -1) return byOpenDay;
     const byDay = groups.findIndex(group => group.day === searchParams.get("day"));
     if (byDay !== -1) return byDay;
     const byEvent = groups.findIndex(group => group.events.some(event => String(event.id) === openEvent));
     return Math.max(byEvent, 0);
+  };
+
+  // Edits the live URL rather than setSearchParams' updater argument, which is
+  // the params as of the last render: the dialog may have just replaced
+  // ?event= as it stepped, and writing ?day= from stale params would undo it.
+  const replaceParams = (update: (params: URLSearchParams) => void) => {
+    const params = new URLSearchParams(window.location.search);
+    update(params);
+    setSearchParams(params, { replace: true, preventScrollReset: true });
   };
 
   const [index, setIndex] = useState(initialIndex);
@@ -232,22 +268,48 @@ export function EventsOverview({ events }: { events: Event[]; }) {
     return () => observer.disconnect();
   }, [current, groups.length]);
 
-  // On a new day, bring its top back into view if we'd scrolled down a long
-  // one, and record it in the URL so Back/refresh/sharing keep the day.
+  // On a new day, bring its top back into view if we'd scrolled down a long one.
   useEffect(() => {
     const root = rootRef.current;
     if (root && root.getBoundingClientRect().top < 0) {
       window.scrollTo({ top: window.scrollY + root.getBoundingClientRect().top, behavior: "instant" });
     }
-    const day = groups[current]?.day;
-    if (day && searchParams.get("day") !== day) {
-      setSearchParams(params => {
+  }, [current]);
+
+  // Record the day in the URL so refresh/sharing keep it. Also re-run when the
+  // URL's day changes under us: closing the dialog pops back to the entry from
+  // when it opened, whose ?day= predates the days the dialog stepped through.
+  const day = groups[current]?.day;
+  const dayParam = searchParams.get("day");
+  useEffect(() => {
+    if (day && dayParam !== day) {
+      replaceParams(params => {
         params.set("day", day);
         params.delete("tab");
-        return params;
-      }, { replace: true, preventScrollReset: true });
+      });
     }
-  }, [current, groups[current]?.day]);
+  }, [day, dayParam]);
+
+  // Follow the dialog: stepping past the last event of a day moves the page
+  // behind it on to the next, so closing the dialog leaves you on that day. A
+  // plain ?event=<id> (an older link) is pinned to a day first, preferring the
+  // one on screen.
+  useEffect(() => {
+    if (!openEvent) return;
+    const parsed = parseDialogId(openEvent);
+    if (parsed) {
+      const i = groups.findIndex(group => group.day === parsed.day);
+      if (i !== -1 && i !== current) goTo(i, "instant");
+      return;
+    }
+    const hasEvent = (i: number) => groups[i]?.events.some(event => String(event.id) === openEvent);
+    const i = hasEvent(current) ? current : groups.findIndex((_, i) => hasEvent(i));
+    if (i === -1) return;
+    replaceParams(params => {
+      params.set("event", `${openEvent}-${groups[i].day}`);
+      params.set("day", groups[i].day);
+    });
+  }, [openEvent]);
 
   // ←/→ step days, unless the event dialog (which steps events) is open or
   // focus is in a text field.
@@ -297,9 +359,8 @@ export function EventsOverview({ events }: { events: Event[]; }) {
         </Button>
       </div>
 
-      {/* One page per day, each a little narrower than the screen so the edge
-          of the next day peeks in and invites a swipe. Only the current day
-          and its neighbours render their events. */}
+      {/* One full-width page per day. Only the current day and its
+          neighbours render their events. */}
       <div
         ref={pagerRef}
         onScroll={onScroll}
@@ -312,18 +373,20 @@ export function EventsOverview({ events }: { events: Event[]; }) {
           <div
             key={group.day}
             ref={el => { pageRefs.current[i] = el; }}
-            className="flex-none w-[88%] snap-start snap-always"
+            className="flex-none w-full snap-start snap-always"
             aria-hidden={i !== current}
             inert={i !== current}
           >
             <DayPage day={group.day} events={group.events} week={weekLabel(group.day)} render={Math.abs(i - current) <= 1} />
           </div>
         ))}
-        {/* Lets the last page scroll all the way to the start edge. */}
-        <div aria-hidden className="flex-none w-[calc(12%-0.75rem)] h-px" />
       </div>
 
-      <EventListDialog events={groups[current].events} />
+      <EventListDialog
+        events={dialogEntries.map(entry => entry.event)}
+        dialogId={(_, i) => dialogId(dialogEntries[i].event, dialogEntries[i].day)}
+        eventDay={(event, i) => eventDay(event, dialogEntries[i].day)}
+      />
     </div>
   );
 }

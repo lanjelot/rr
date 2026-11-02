@@ -1,5 +1,5 @@
 import type { Event } from "~/lib/data";
-import { isHappeningNow, eventDate, eventTime } from "~/lib/utils";
+import { isHappeningNow, eventDate, eventLineup, eventTime } from "~/lib/utils";
 import { renderTextWithLinksAndBreaks } from "./render-text-with-links";
 import { useLocation, useNavigate } from "react-router";
 import { Button } from "./ui/button";
@@ -49,11 +49,8 @@ export function EventDetails({ event }: { event: Event; }) {
           <div className="text-center font-medium m-3">{event.name}</div>
           <div className="flex flex-col gap-3 text-sm text-muted-foreground">
             <ul>
-              {event.artists && (
-                <li>🎧 {event.artists}</li>
-              )}
-              {event.djs && (
-                <li>🎧 {event.djs}</li>
+              {eventLineup(event) && (
+                <li>🎧 {eventLineup(event)}</li>
               )}
               {event.promoter && (
                 <li>🌀 {event.promoter}</li>

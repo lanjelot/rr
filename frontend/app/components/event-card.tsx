@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Event } from "~/lib/data";
-import { isHappeningNow, eventDate, eventTime } from "~/lib/utils";
+import { isHappeningNow, eventDate, eventLineup, eventTime } from "~/lib/utils";
 import { renderTextWithLinks, renderTextWithLinksAndBreaks } from "./render-text-with-links";
 import { useFlyerOverlay, FlyerOverlay } from "../hooks/flyer-overlay";
 import { DateBadge, RegionBadge } from "./event-badges";
@@ -41,17 +41,7 @@ export function EventCard({ event }: { event: Event; }) {
           <div className="text-sm text-muted-foreground p-3">
             <div className="flex flex-col gap-6">
               <ul>
-                {event.artists && event.djs ? (
-                  <>
-                  <li>🎧 Headline: {event.artists}</li>
-                  <li>🎧 Supports: {event.djs}</li>
-                  </>
-                ) : (
-                  <>
-                  {event.artists && <li>🎧 {event.artists}</li>}
-                  {event.djs && <li>🎧 {event.djs}</li>}
-                  </>
-                )}
+                {eventLineup(event) && <li>🎧 {eventLineup(event)}</li>}
                 {event.promoter && <li>🌀 {event.promoter}</li>}
               </ul>
               <ul>

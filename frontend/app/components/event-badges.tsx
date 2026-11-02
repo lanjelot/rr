@@ -1,10 +1,35 @@
 import { type Event } from "~/lib/data";
-import { eventDate } from "~/lib/utils";
+import { eventDate, formatDate } from "~/lib/utils";
 
-export function DateBadge({ event }: { event: Event }) {
+// Which of a multi-day event's days an entry is, where a view lists the event
+// once per day (the overview's day pages, the calendar's day cards).
+export type EventDay = { day: string; n: number; total: number };
+
+// Numbers each event's days from every (event, day) entry a view lists, so
+// "Day n/N" counts the days as that view splits them.
+export function eventDayNumberer(entries: { event: Event; day: string }[]) {
+  const days = new Map<number, string[]>();
+  for (const { event, day } of entries) {
+    const list = days.get(event.id) ?? [];
+    if (!list.includes(day)) list.push(day);
+    days.set(event.id, list);
+  }
+  for (const list of days.values()) list.sort();
+
+  return (event: Event, day: string): EventDay => {
+    const list = days.get(event.id) ?? [day];
+    return { day, n: list.indexOf(day) + 1, total: list.length };
+  };
+}
+
+// The event's dates, or for one day of a multi-day event that day and which it
+// is, e.g. "Sun 8 Nov - Day 2/2".
+export function DateBadge({ event, eventDay }: { event: Event; eventDay?: EventDay }) {
   return (
     <div className="rounded-md bg-green-50 px-2 py-1 text-sm font-medium text-green-800">
-      {eventDate(event)}
+      {eventDay && eventDay.total > 1
+        ? `${formatDate(eventDay.day)} - Day ${eventDay.n}/${eventDay.total}`
+        : eventDate(event)}
     </div>
   );
 }
