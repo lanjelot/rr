@@ -6,6 +6,7 @@ import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { useRegion } from "~/contexts/region-context";
+import { useGenres } from "~/contexts/genre-context";
 import { useSearchParams } from "react-router";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -184,10 +185,11 @@ function DayPage({ day, events, week, render }: { day: string; events: Event[]; 
 
 export function EventsOverview({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
+  const { selectedGenres, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const openEvent = searchParams.get("event");
 
-  const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region));
+  const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region) && matchesSelectedGenres(event));
   const allGroups = groupEventsByDay(regionEvents);
   const weekLabel = weekLabeller(allGroups);
   const today = moment().format(DAY_FMT);
@@ -250,13 +252,13 @@ export function EventsOverview({ events }: { events: Event[]; }) {
     setIndex(i);
   }, [groups.length]);
 
-  // Jump straight to the starting day, and back to it if the region selection
+  // Jump straight to the starting day, and back to it if the region or genre selection
   // changes the set of days.
   useLayoutEffect(() => {
     const i = initialIndex();
     setIndex(i);
     pagerRef.current?.scrollTo({ left: pageLeft(i), behavior: "instant" });
-  }, [selectedRegions.join(",")]);
+  }, [selectedRegions.join(","), selectedGenres.join(",")]);
 
   // The pager is clipped to the current page's height so a short day doesn't
   // sit above a screen of blank space left by its taller neighbours.

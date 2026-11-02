@@ -11,6 +11,7 @@ import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "./ui/breadcrumb";
 import { useRegion } from "~/contexts/region-context";
+import { useGenres } from "~/contexts/genre-context";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { EventListDialog } from "./event-details-card";
 import { isSearchParam, matchesSearch, type SearchParam } from "~/lib/search";
@@ -21,6 +22,7 @@ type ViewMode = "thumbnail" | "detailed" ;
 
 export function EventList({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
+  const { matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<ViewMode>("thumbnail");
   const { value: openEventId, show } = useUrlDialogParam("event");
@@ -34,6 +36,8 @@ export function EventList({ events }: { events: Event[]; }) {
 
   const filteredEvents = events.filter((event: Event) =>
     selectedRegions.includes(event.region) &&
+    // A search looks across every genre.
+    (filters.length > 0 || matchesSelectedGenres(event)) &&
     isFutureEvent(event) &&
     // Keep the open event while its dialog is up, so un-bookmarking it there
     // doesn't pull it out from under the dialog.

@@ -8,6 +8,7 @@ import { useFlyerOverlay, FlyerOverlay } from "../hooks/flyer-overlay";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { TicketLink } from "./ticket-link";
 import { EventLocationMap } from "./event-location-map";
+import { EventGenres } from "./event-genres";
 
 
 export function EventDetails({ event }: { event: Event; }) {
@@ -70,9 +71,7 @@ export function EventDetails({ event }: { event: Event; }) {
               )}
             </ul>
             <ul>
-              {event.genre && (
-                <li>🎶 {event.genre}</li>
-              )}
+              <EventGenres event={event} />
               {event.ticket && (
                 <li>🎫 <TicketLink event={event} /></li>
               )}

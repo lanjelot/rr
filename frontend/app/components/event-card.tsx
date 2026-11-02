@@ -6,6 +6,7 @@ import { useFlyerOverlay, FlyerOverlay } from "../hooks/flyer-overlay";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { TicketLink } from "./ticket-link";
 import { BookmarkButton } from "./bookmark-button";
+import { EventGenres } from "./event-genres";
 
 const NOTES_PREVIEW_LENGTH = 256;
 
@@ -54,9 +55,7 @@ export function EventCard({ event }: { event: Event; }) {
                 )}
               </ul>
               <ul>
-                {event.genre && (
-                  <li>🎶 {event.genre}</li>
-                )}
+                <EventGenres event={event} />
                 {event.ticket && (
                   <li>🎫 <TicketLink event={event} /></li>
                 )}

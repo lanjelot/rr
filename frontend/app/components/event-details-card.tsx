@@ -3,10 +3,11 @@ import type { Event } from "~/lib/data";
 import { cn, eventDate, eventLineup, eventTime, isHappeningNow } from "~/lib/utils";
 import { useUrlDialog, useUrlDialogParam } from "~/hooks/url-dialog";
 import { DateBadge, RegionBadge, type EventDay } from "./event-badges";
-import { TicketLink } from "./ticket-link";
+import { Button } from "./ui/button";
 import { Dialog, DialogClose, DialogContent, DialogPortal, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkButton } from "./bookmark-button";
+import { EventGenres } from "./event-genres";
 
 // Wraps `children` as the trigger for this event's details dialog. Open state
 // lives in the URL, so Back closes the dialog rather than leaving the page.
@@ -30,7 +31,9 @@ export function EventDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <EventDialogContent>
+      {/* Capped to the viewport so long details scroll inside the card rather
+          than pushing its buttons off screen. */}
+      <EventDialogContent className="flex flex-col max-h-[calc(100dvh-4rem)]">
         <EventDetailsCard event={event} />
       </EventDialogContent>
     </Dialog>
@@ -108,7 +111,7 @@ export function EventListDialog({
           }}
         >
           <EventDetailsCard event={event} eventDay={eventDay?.(event, shownIndex)}>
-            <div className="absolute bottom-2 left-2 rounded-md bg-black/50 px-2 text-xs text-white">
+            <div className="absolute bottom-2 left-2 rounded-md bg-black/80 px-2 text-xs text-white">
               {shownIndex + 1} / {events.length}
             </div>
           </EventDetailsCard>
@@ -171,6 +174,9 @@ function EventDialogContent({ className, ...props }: ComponentProps<typeof Dialo
   return (
     <DialogContent
       className={cn("p-0", className)}
+      // EventDetailsCard has its own close button on the flyer; the default one
+      // would sit on top of the region badge.
+      showCloseButton={false}
       onPointerDownOutside={(event) => {
         const { button, target } = event.detail.originalEvent;
         // A mouse back/forward button (3/4) arrives as a pointerdown on the
@@ -209,13 +215,13 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
         <div className="absolute top-2 right-2">
           <RegionBadge event={event} />
         </div>
-        <DialogClose className="absolute bottom-2 right-2 text-white">
-          <XCircleIcon className="size-6" />
+        <DialogClose className="absolute bottom-2 right-2 text-white bg-black/80 outline-none rounded-md">
+          <XMarkIcon className="size-6" />
         </DialogClose>
         {children}
       </div>
 
-      <div className="min-h-0 overflow-y-auto flex flex-col gap-3 px-4 pb-12">
+      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-3 px-4">
         <DialogTitle className="text-center">{event.name}</DialogTitle>
         <div className="flex flex-col gap-3 text-sm text-muted-foreground">
           <ul>
@@ -233,20 +239,29 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
             <li>📍 {event.location}</li>
             {event.venue && <li>🏛️ {event.venue}</li>}
           </ul>
-          <ul>
-            {event.genre && <li>🎶 {event.genre}</li>}
-            {event.ticket && (
-              <li>🎫 <TicketLink event={event} /></li>
-            )}
-          </ul>
+          {(event.genre || !!event.canonical_genres?.length) && (
+            <ul>
+              <EventGenres event={event} />
+            </ul>
+          )}
         </div>
       </div>
 
-      {/* Pinned to the card's corner rather than following the details, so they
-          stay put whether or not the details are long enough to scroll. */}
-      <div className="absolute bottom-3 right-4 flex items-center gap-5 text-muted-foreground">
-        <ShareEventButton event={event} />
-        <BookmarkButton eventId={event.id} />
+      {/* Outside the scrolling details, so they stay at the bottom of the card
+          whether or not the details are long enough to scroll. */}
+      <div className="shrink-0 flex items-center gap-5 px-4 pb-4 text-muted-foreground">
+        {event.ticket && (
+          <Button asChild className="flex-1">
+            <a href={event.ticket} target="_blank" rel="noopener noreferrer">
+              Get Tickets
+              <ArrowTopRightOnSquareIcon />
+            </a>
+          </Button>
+        )}
+        <div className="ms-auto flex items-center gap-5">
+          <ShareEventButton event={event} />
+          <BookmarkButton eventId={event.id} />
+        </div>
       </div>
     </div>
   );

@@ -64,6 +64,8 @@ export type Event = {
   location: string;
   venue?: string;
   genre?: string;
+  // Parent genres from GENRES in ~/lib/genres.
+  canonical_genres?: string[];
   ticket?: string;
   latitude: number | null;
   longitude: number | null;

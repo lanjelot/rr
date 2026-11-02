@@ -26,7 +26,7 @@ export function eventDayNumberer(entries: { event: Event; day: string }[]) {
 // is, e.g. "Sun 8 Nov - Day 2/2".
 export function DateBadge({ event, eventDay }: { event: Event; eventDay?: EventDay }) {
   return (
-    <div className="rounded-md bg-green-50 px-2 py-1 text-sm font-medium text-green-800">
+    <div className="rounded-md bg-green-50 text-black px-2 py-1 text-sm font-medium">
       {eventDay && eventDay.total > 1
         ? `${formatDate(eventDay.day)} - Day ${eventDay.n}/${eventDay.total}`
         : eventDate(event)}
@@ -36,7 +36,7 @@ export function DateBadge({ event, eventDay }: { event: Event; eventDay?: EventD
 
 export function RegionBadge({ event }: { event: Event }) {
   return (
-    <div className="rounded-md bg-purple-300 px-2 py-1 text-sm font-medium text-purple-800">
+    <div className="rounded-md bg-purple-300 text-black px-2 py-1 text-sm font-medium">
       {event.zone}
     </div>
   );

@@ -7,6 +7,8 @@ import moment from "moment";
 import { REGIONS, type Event } from "~/lib/data";
 import { cn, isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
+import { useGenres } from "~/contexts/genre-context";
+import { matchesGenres } from "~/lib/genres";
 import { Button } from "~/components/ui/button";
 import { Toggle } from "~/components/ui/toggle";
 import { useBookmarks } from "~/contexts/bookmarks-context";
@@ -404,6 +406,7 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 
 export function CalendarView({ events }: { events: Event[]; }) {
   const { selectedRegions } = useRegion();
+  const { selectedGenres } = useGenres();
   const [searchParams] = useSearchParams();
   const { value: openDialogId, show } = useUrlDialogParam("event");
   const { isBookmarked } = useBookmarks();
@@ -425,13 +428,14 @@ export function CalendarView({ events }: { events: Event[]; }) {
       events
         .filter((event) =>
           selectedRegions.includes(event.region) &&
+          matchesGenres(event, selectedGenres) &&
           (isThisShowWeek(event) || isFutureEvent(event)) &&
           // Keep the open event while its dialog is up, so un-bookmarking it there
           // doesn't pull it out from under the dialog.
           (!bookmarkedOnly || isBookmarked(event.id) || openDialogId?.startsWith(`${event.id}-`))
         )
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
-    [events, selectedRegions, bookmarkedOnly, isBookmarked, openDialogId]
+    [events, selectedRegions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
   const dayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
