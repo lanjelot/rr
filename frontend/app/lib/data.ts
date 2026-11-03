@@ -9,9 +9,9 @@ const STATIC_DATA = import.meta.env.VITE_STATIC_DATA === "true";
 const BASE_URL = import.meta.env.BASE_URL;
 
 // The static export saves a small JPEG copy of each flyer, named after it:
-// /data/flyers/abc.png → /data/previews/abc.jpg
+// /data/flyers/abc.jpg → /data/previews/abc.jpg
 function previewPath(flyer: string): string {
-  return flyer.replace("/flyers/", "/previews/").replace(/\.\w+$/, ".jpg");
+  return flyer.replace("/flyers/", "/previews/");
 }
 
 async function fetchStaticEvents(): Promise<Event[]> {

@@ -60,7 +60,29 @@ function CheckboxButton({
   );
 }
 
-function GenreList() {
+function ListFooter({
+  canClear,
+  onClear,
+  onClose,
+}: {
+  canClear: boolean;
+  onClear: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="flex justify-between gap-1">
+      <Button variant="ghost" disabled={!canClear} className="text-muted-foreground" onClick={onClear}>
+        <ArrowUturnLeftIcon className="size-4" />
+        Clear
+      </Button>
+      <Button variant="ghost" onClick={onClose}>
+        Close
+      </Button>
+    </div>
+  );
+}
+
+function GenreList({ onClose }: { onClose: () => void }) {
   const { selectedGenres, setSelectedGenres } = useGenres();
   // Subgenre lists are long, so each parent's list only shows once asked for.
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -99,20 +121,16 @@ function GenreList() {
         );
       })}
       <Separator orientation="horizontal" />
-      <Button
-        variant="ghost"
-        disabled={selectedGenres.length === 0}
-        className="justify-between text-muted-foreground"
-        onClick={() => setSelectedGenres([])}
-      >
-        <span>Clear</span>
-        <ArrowUturnLeftIcon className="size-4" />
-      </Button>
+      <ListFooter
+        canClear={selectedGenres.length > 0}
+        onClear={() => setSelectedGenres([])}
+        onClose={onClose}
+      />
     </div>
   );
 }
 
-function RegionList() {
+function RegionList({ onClose }: { onClose: () => void }) {
   const { selectedRegions, setSelectedRegions } = useRegion();
 
   return (
@@ -127,15 +145,11 @@ function RegionList() {
         </CheckboxButton>
       ))}
       <Separator orientation="horizontal" />
-      <Button
-        variant="ghost"
-        disabled={selectedRegions.length === 0}
-        className="justify-between text-muted-foreground"
-        onClick={() => setSelectedRegions([])}
-      >
-        <span>Clear</span>
-        <ArrowUturnLeftIcon className="size-4" />
-      </Button>
+      <ListFooter
+        canClear={selectedRegions.length > 0}
+        onClear={() => setSelectedRegions([])}
+        onClose={onClose}
+      />
     </div>
   );
 }
@@ -194,6 +208,7 @@ function SubView({ title, onBack, children }: { title: string; onBack: () => voi
 export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
   const { selectedGenres } = useGenres();
   const { selectedRegions } = useRegion();
+  const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
   // The main view only slides back in when coming back from a list, not on open.
   const [returned, setReturned] = useState(false);
@@ -204,15 +219,16 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
     setReturned(true);
   }
 
+  function openChange(next: boolean) {
+    setOpen(next);
+    if (!next) {
+      setView("main");
+      setReturned(false);
+    }
+  }
+
   return (
-    <Popover
-      onOpenChange={(open) => {
-        if (!open) {
-          setView("main");
-          setReturned(false);
-        }
-      }}
-    >
+    <Popover open={open} onOpenChange={openChange}>
       <PopoverTrigger asChild>
         <button
           className="relative p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
@@ -227,11 +243,11 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
       <PopoverContent align="end" className="w-72 p-1 gap-1 max-h-[80vh] overflow-hidden">
         {view === "regions" ? (
           <SubView title="Regions" onBack={back}>
-            <RegionList />
+            <RegionList onClose={() => openChange(false)} />
           </SubView>
         ) : view === "genres" ? (
           <SubView title="Genres" onBack={back}>
-            <GenreList />
+            <GenreList onClose={() => openChange(false)} />
           </SubView>
         ) : (
           <div
