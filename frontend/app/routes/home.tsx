@@ -10,8 +10,6 @@ import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { BookmarkIcon, CalendarDaysIcon, ListBulletIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
-import moment from "moment";
-import { raveWeekStart } from "~/lib/utils";
 
 const GOOGLE_CALENDAR_SUBSCRIBE = "https://calendar.google.com/calendar/r?cid=theraveroster%40gmail.com";
 
@@ -46,21 +44,12 @@ export default function Home({
   const viewMode: ViewMode = searchParams.get("view") === "calendar" ? "calendar" : "days";
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
 
-  // The calendar opens on the week of the day being viewed. Handed over as
-  // ?week= rather than ?day=, which the calendar would scroll down to as a
-  // shared day.
+  // Both views share ?day=, so switching opens on the same day.
   function setViewMode(mode: ViewMode) {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
-      const day = params.get("day");
-      if (mode === "calendar") {
-        params.set("view", mode);
-        if (day) params.set("week", raveWeekStart(moment(day, "YYYY-MM-DD")).format("YYYY-MM-DD"));
-        params.delete("day");
-      } else {
-        params.delete("view");
-        params.delete("week");
-      }
+      if (mode === "calendar") params.set("view", mode);
+      else params.delete("view");
       params.delete("event");
       return params;
     }, { replace: true, preventScrollReset: true });

@@ -48,12 +48,12 @@ function weekendDays(weekStart: moment.Moment) {
   return [3, 4, 5].map(offset => weekStart.clone().add(offset, "days"));
 }
 
-type WeekLabel = { key: string; tag?: "This week" | "Next week"; range: string; };
+export type WeekLabel = { key: string; tag?: "This week" | "Next week"; range: string; };
 
 // Labels each week by the days that have events in it, widened to at least
 // Friday to Sunday, e.g. "13 - 15 Nov" or "30 Oct - 2 Nov". Only shown past
 // next week, where "This week"/"Next week" stop being enough.
-function weekLabeller(groups: { day: string; }[]) {
+export function weekLabeller(groups: { day: string; }[]) {
   const ranges = new Map<string, { first: moment.Moment; last: moment.Moment; }>();
   for (const group of groups) {
     const day = moment(group.day, DAY_FMT);
@@ -178,6 +178,53 @@ function DayStrip({
   );
 }
 
+// The day strip with its Previous/Next arrows, stuck to the top of the screen
+// as the page scrolls. Shared by Home's list and calendar views, and has to be
+// the first child of the view so its parent's top says when it's stuck.
+export function DayStripBar({
+  groups,
+  index,
+  weekLabel,
+  onSelect,
+}: {
+  groups: { day: string; events: Event[]; }[];
+  index: number;
+  weekLabel: (day: string) => WeekLabel;
+  onSelect: (index: number) => void;
+}) {
+  const barRef = useRef<HTMLDivElement>(null);
+
+  // See-through at rest, and only gets a backing once it's stuck to the top
+  // with events scrolling under it.
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setStuck((barRef.current?.parentElement?.getBoundingClientRect().top ?? 0) < 0);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div
+      ref={barRef}
+      className={cn(
+        "sticky top-0 z-10 -mx-3 px-3 py-2 flex items-center gap-1 border-b border-transparent transition-colors",
+        stuck && "backdrop-blur-md bg-zinc-100/80 border-black/10 dark:bg-zinc-900/80 dark:border-white/10",
+      )}
+    >
+      <Button variant="ghost" size="icon" aria-label="Previous day" disabled={index === 0} onClick={() => onSelect(index - 1)}>
+        <ChevronLeftIcon />
+      </Button>
+      <div className="min-w-0 grow">
+        <DayStrip groups={groups} index={index} weekLabel={weekLabel} onSelect={onSelect} />
+      </div>
+      <Button variant="ghost" size="icon" aria-label="Next day" disabled={index === groups.length - 1} onClick={() => onSelect(index + 1)}>
+        <ChevronRightIcon />
+      </Button>
+    </div>
+  );
+}
+
 // The dialog steps through every upcoming day, so a multi-day event is an entry
 // per day it's listed on, keyed on the day too (as in the calendar). The day in
 // the param is also what the pager follows as the dialog steps across days.
@@ -257,16 +304,6 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
   const pagerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [height, setHeight] = useState<number>();
-
-  // The day strip is see-through at rest, and only gets a backing once it's
-  // stuck to the top with events scrolling under it.
-  const [stuck, setStuck] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setStuck((rootRef.current?.getBoundingClientRect().top ?? 0) < 0);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
 
   const pageLeft = (i: number) => (pageRefs.current[i]?.offsetLeft ?? 0) - (pageRefs.current[0]?.offsetLeft ?? 0);
 
@@ -375,22 +412,7 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
 
   return (
     <div ref={rootRef} className="flex flex-col gap-3">
-      <div
-        className={cn(
-          "sticky top-0 z-10 -mx-3 px-3 py-2 flex items-center gap-1 border-b border-transparent transition-colors",
-          stuck && "backdrop-blur-md bg-zinc-100/80 border-black/10 dark:bg-zinc-900/80 dark:border-white/10",
-        )}
-      >
-        <Button variant="ghost" size="icon" aria-label="Previous day" disabled={current === 0} onClick={() => goTo(current - 1)}>
-          <ChevronLeftIcon />
-        </Button>
-        <div className="min-w-0 grow">
-          <DayStrip groups={groups} index={current} weekLabel={weekLabel} onSelect={goTo} />
-        </div>
-        <Button variant="ghost" size="icon" aria-label="Next day" disabled={current === groups.length - 1} onClick={() => goTo(current + 1)}>
-          <ChevronRightIcon />
-        </Button>
-      </div>
+      <DayStripBar groups={groups} index={current} weekLabel={weekLabel} onSelect={goTo} />
 
       {/* One full-width page per day. Only the current day and its
           neighbours render their events. */}

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Share2Icon } from "lucide-react";
 import { CheckIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import { REGIONS, type Event } from "~/lib/data";
-import { cn, isFutureEvent } from "~/lib/utils";
+import { isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { useGenres } from "~/contexts/genre-context";
 import { matchesGenres } from "~/lib/genres";
@@ -14,6 +14,7 @@ import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
+import { DayStripBar, weekLabeller } from "./events-overview";
 
 // Day cards run from 10am to 6am the next day, since that's when raves actually happen.
 const WINDOW_START_HOUR = 10;
@@ -175,26 +176,6 @@ function dayLabel(day: string): string {
   return moment(day).format("dddd D MMMM");
 }
 
-type WeekTab = {
-  key: string;
-  label: string;
-  groups: DayGroup[];
-};
-
-type MonthTab = {
-  key: string;
-  label: string;
-  weeks: WeekTab[];
-};
-
-function monthKey(day: string): string {
-  return moment(day).startOf("month").format("YYYY-MM-DD");
-}
-
-function monthLabel(monthStart: string): string {
-  return moment(monthStart).format("MMM YYYY");
-}
-
 // Weeks run Tuesday to Tuesday, not Monday to Sunday.
 function weekKey(day: string): string {
   const d = moment(day);
@@ -202,20 +183,11 @@ function weekKey(day: string): string {
   return d.clone().subtract(daysSinceTuesday, "days").format("YYYY-MM-DD");
 }
 
-// Weeks are labelled by their Fri-Sun span, since that's when raves actually happen.
-function weekLabel(weekStart: string): string {
-  const friday = moment(weekStart).add(3, "days");
-  const sunday = moment(weekStart).add(5, "days");
-  const sameMonth = friday.isSame(sunday, "month");
-
-  return `Fri ${friday.format(sameMonth ? "D" : "D MMM")} - Sun ${sunday.format("D")}`;
-}
-
 // Whether the event falls in the current Tue-Tue week (using the same show-day cutoff),
 // so e.g. last Monday's events, which belong to the previous week, are excluded.
 // 10am cutoff: "today" is shifted by the same 10am cutoff the rest of the calendar uses.
 // For example, at 5am on a Tuesday the current week is still the previous one, which
-// matches how the tabs and the "Today" tag behave.
+// matches how the strip and the "Today" tag behave.
 function isThisShowWeek(event: Event): boolean {
   const today = moment()
     .utcOffset(moment.parseZone(event.start_at).utcOffset())
@@ -224,35 +196,7 @@ function isThisShowWeek(event: Event): boolean {
   return weekKey(showDay(event.start_at)) === weekKey(today);
 }
 
-function groupByWeek(dayGroups: DayGroup[]): WeekTab[] {
-  const map = new Map<string, DayGroup[]>();
-
-  for (const group of dayGroups) {
-    const key = weekKey(group.day);
-    map.set(key, [...(map.get(key) ?? []), group]);
-  }
-
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, groups]) => ({ key, label: weekLabel(key), groups }));
-}
-
-// Months are built out of whole weeks, and a week that straddles two months belongs to
-// the month its Friday falls in, matching the Fri-Sun span the week is labelled by.
-function groupByMonth(weeks: WeekTab[]): MonthTab[] {
-  const map = new Map<string, WeekTab[]>();
-
-  for (const week of weeks) {
-    const key = monthKey(moment(week.key).add(3, "days").format("YYYY-MM-DD"));
-    map.set(key, [...(map.get(key) ?? []), week]);
-  }
-
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, monthWeeks]) => ({ key, label: monthLabel(key), weeks: monthWeeks }));
-}
-
-// Anchor id for a day card, so shared day links can scroll straight to it.
+// Anchor id for a day card, so the strip can scroll straight to it.
 function dayCardId(day: string): string {
   return `day-${day}`;
 }
@@ -324,36 +268,6 @@ function DayCard({
   );
 }
 
-function TabRow({
-  tabs,
-  activeKey,
-  onSelect,
-}: {
-  tabs: { key: string; label: string }[];
-  activeKey: string;
-  onSelect: (key: string) => void;
-}) {
-  return (
-    <div className="flex gap-2 overflow-x-auto no-scrollbar">
-      {tabs.map((tab) => (
-        <button
-          key={tab.key}
-          type="button"
-          onClick={() => onSelect(tab.key)}
-          className={cn(
-            "flex-none px-3 py-1.5 rounded-full text-sm whitespace-nowrap transition-colors",
-            tab.key === activeKey
-              ? "bg-primary text-primary-foreground font-medium"
-              : "bg-zinc-100 text-muted-foreground hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10"
-          )}
-        >
-          {tab.label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 // Shared links carry the regions too, since the day alone would otherwise show
 // whatever regions the recipient last had selected.
 function regionParam(regions: string[]): string {
@@ -415,20 +329,10 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
   const { selectedRegions } = useRegion();
   const { selectedGenres } = useGenres();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { value: openDialogId, show } = useUrlDialogParam("event");
   const { isBookmarked } = useBookmarks();
-  const [activeMonth, setActiveMonth] = useState<string | null>(null);
-  // Read once, on mount: a shared link opens on its day's week, then the tabs own the state.
-  // Older links shared a whole week rather than a day, so fall back to that.
-  const [sharedDay] = useState(() => searchParams.get("day"));
-  const [activeWeek, setActiveWeek] = useState<string | null>(() =>
-    sharedDay ? weekKey(sharedDay) : searchParams.get("week")
-  );
-
-  useEffect(() => {
-    if (sharedDay) document.getElementById(dayCardId(sharedDay))?.scrollIntoView({ block: "start" });
-  }, [sharedDay]);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const filteredEvents = useMemo(
     () =>
@@ -445,16 +349,93 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     [events, selectedRegions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
-  const dayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
-  // Numbered across every week, so a festival spanning two weeks counts on.
+  // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
+  const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
+
+  const allDayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
+  // Numbered across every day, so a festival that started weeks ago counts on.
   const eventDay = useMemo(
-    () => eventDayNumberer(dayGroups.flatMap((group) => group.items)),
+    () => eventDayNumberer(allDayGroups.flatMap((group) => group.items)),
+    [allDayGroups]
+  );
+  // From the start of this week: a festival that's been running for weeks
+  // would otherwise reach the strip back to its first day.
+  const dayGroups = useMemo(
+    () => allDayGroups.filter((group) => group.day >= weekKey(today)),
+    [allDayGroups, today]
+  );
+  // The same day strip as the list view, over the calendar's show days.
+  const stripGroups = useMemo(
+    () => dayGroups.map((group) => ({ day: group.day, events: group.items.map((item) => item.event) })),
     [dayGroups]
   );
-  const weeks = useMemo(() => groupByWeek(dayGroups), [dayGroups]);
-  const months = useMemo(() => groupByMonth(weeks), [weeks]);
+  const weekLabel = useMemo(() => weekLabeller(stripGroups), [stripGroups]);
 
-  if (months.length === 0) {
+  // Start on the day in the URL (the list view's, or a shared link's), else an
+  // older link's ?week=, else today or the next day with something on.
+  const initialIndex = () => {
+    const byDay = dayGroups.findIndex((group) => group.day === searchParams.get("day"));
+    if (byDay !== -1) return byDay;
+    const week = searchParams.get("week");
+    const byWeek = week ? dayGroups.findIndex((group) => weekKey(group.day) === week) : -1;
+    if (byWeek !== -1) return byWeek;
+    return Math.max(dayGroups.findIndex((group) => group.day >= today), 0);
+  };
+
+  const [index, setIndex] = useState(initialIndex);
+  const current = Math.min(index, Math.max(dayGroups.length - 1, 0));
+  const day = dayGroups[current]?.day;
+
+  // The day to bring into view once its week has rendered, starting with the
+  // one the view opens on.
+  const pendingScroll = useRef<{ day: string; behavior: ScrollBehavior } | null>(
+    day ? { day, behavior: "instant" } : null
+  );
+
+  function select(i: number) {
+    const group = dayGroups[i];
+    if (!group) return;
+    // Within the week the page is already showing, glide there; a new week
+    // swaps the cards out, so jump.
+    const sameWeek = weekKey(group.day) === weekKey(day ?? "");
+    pendingScroll.current = { day: group.day, behavior: sameWeek ? "smooth" : "instant" };
+    setIndex(i);
+  }
+
+  // Back to the starting day when the region, genre or bookmark filter changes
+  // the set of days.
+  useLayoutEffect(() => {
+    const i = initialIndex();
+    setIndex(i);
+    if (dayGroups[i]) pendingScroll.current = { day: dayGroups[i].day, behavior: "instant" };
+  }, [selectedRegions.join(","), selectedGenres.join(","), bookmarkedOnly]);
+
+  // Brings the day's card up under the stuck strip. A week's first day goes
+  // back to the top of the page instead, so the controls above come back too.
+  useLayoutEffect(() => {
+    const target = pendingScroll.current;
+    const card = target && document.getElementById(dayCardId(target.day));
+    const bar = rootRef.current?.firstElementChild as HTMLElement | null;
+    if (!target || !card || !bar) return;
+    pendingScroll.current = null;
+    const top = card.previousElementSibling
+      ? card.getBoundingClientRect().top + window.scrollY - bar.offsetHeight - 12
+      : 0;
+    window.scrollTo({ top, behavior: target.behavior });
+  });
+
+  // Record the day in the URL, as the list view does, so switching views or
+  // refreshing keeps it. Edits the live URL, as an open dialog may have just
+  // replaced ?event=.
+  useEffect(() => {
+    if (!day || searchParams.get("day") === day) return;
+    const params = new URLSearchParams(window.location.search);
+    params.set("day", day);
+    params.delete("week");
+    setSearchParams(params, { replace: true, preventScrollReset: true });
+  }, [day]);
+
+  if (dayGroups.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-10">
         {bookmarkedOnly ? "No bookmarked events to show." : "No events to show, check your filters."}
@@ -462,26 +443,17 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     );
   }
 
-  const currentMonth =
-    months.find((month) => month.key === activeMonth) ??
-    months.find((month) => month.weeks.some((week) => week.key === activeWeek)) ??
-    months[0];
-  const currentWeek =
-    currentMonth.weeks.find((week) => week.key === activeWeek) ?? currentMonth.weeks[0];
-
+  const week = weekKey(dayGroups[current].day);
+  const weekGroups = dayGroups.filter((group) => weekKey(group.day) === week);
   // The week's bars in the order they're laid out, for the dialog to step through.
-  const weekItems = currentWeek.groups.flatMap((group) => group.items);
-
-  // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
-  const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
+  const weekItems = weekGroups.flatMap((group) => group.items);
 
   return (
-    <div className="flex flex-col gap-3">
-      <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
+    <div ref={rootRef} className="flex flex-col gap-3">
+      <DayStripBar groups={stripGroups} index={current} weekLabel={weekLabel} onSelect={select} />
 
       <div className="flex flex-col gap-3">
-        {currentWeek.groups.map((group) => (
+        {weekGroups.map((group) => (
           <DayCard
             key={group.day}
             group={group}
