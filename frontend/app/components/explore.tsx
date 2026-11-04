@@ -136,14 +136,31 @@ function regionsLabel(regions: string[]): string {
   return regions.length <= 2 ? regions.map(regionLabel).join(", ") : `${regions.length} regions`;
 }
 
+function genresLabel(genres: string[], allGenres: boolean): string {
+  if (allGenres) return "All genres";
+  return genres.length <= 2 ? genres.join(", ") : `${genres.length} genres`;
+}
+
+// A row of a browse dropdown, the phone version of a BrowseChip.
+function BrowseOption({ label, count, onClick }: { label: string; count: number; onClick: () => void }) {
+  return (
+    <Button variant="ghost" className="justify-start" onClick={onClick}>
+      <span className="truncate">{label}</span>
+      <span className="ms-auto font-normal text-muted-foreground">{count}</span>
+    </Button>
+  );
+}
+
 // A dropdown in the filter row. Highlighted while it's narrowing the results.
 function FilterButton({
   label,
   narrowing,
+  className,
   children,
 }: {
   label: string;
   narrowing: boolean;
+  className?: string;
   children: (close: () => void) => ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -151,7 +168,7 @@ function FilterButton({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant={narrowing ? "secondary" : "outline"} size="sm" className="max-w-full">
+        <Button variant={narrowing ? "secondary" : "outline"} size="sm" className={cn("max-w-full", className)}>
           <span className="truncate">{label}</span>
           <ChevronDownIcon className="text-muted-foreground" />
         </Button>
@@ -220,9 +237,10 @@ function BrowseChip({ label, count, pressed, onClick }: { label: string; count: 
   );
 }
 
+// Phones get these as dropdowns in the filter row instead.
 function BrowseSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="hidden md:flex flex-col gap-2">
       <div className="text-sm font-medium text-muted-foreground">{title}</div>
       <div className="flex flex-wrap gap-2">{children}</div>
     </div>
@@ -328,6 +346,14 @@ export function Explore({ events }: { events: Event[] }) {
   );
   const top = (field: SearchField, limit: number) =>
     [...index[field]].sort((a, b) => b.count - a.count).slice(0, limit);
+  const toggleGenre = (genre: string) =>
+    update((params) => params.set("genres", listParam(toggled(allGenres ? [] : genres, genre), ALL_GENRES)));
+  // Somewhere to start before there's a search.
+  const browsing = !hasSearch && viewMode !== "map" && scope.length > 0;
+  const browseFields: { field: SearchField; label: string; title: string; limit: number }[] = [
+    { field: "place", label: "Venues", title: "Venues & locations", limit: 8 },
+    { field: "artist", label: "Artists", title: "Artists", limit: 10 },
+  ];
 
   return (
     <div className="flex flex-col gap-3">
@@ -397,60 +423,108 @@ export function Explore({ events }: { events: Event[] }) {
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterButton
-          label={whenOptions().find((option) => option.value === when)!.label}
-          narrowing={when !== null}
-        >
-          {(close) => (
-            <div className="flex flex-col gap-1">
-              {whenOptions().map((option) => (
-                <CheckboxButton
-                  key={option.value ?? "any"}
-                  checked={when === option.value}
-                  onClick={() => {
-                    update((params) => {
-                      if (option.value) params.set("when", option.value);
-                      else params.delete("when");
-                    });
-                    close();
-                  }}
-                >
-                  {option.label}
-                  {option.detail && (
-                    <span className="ms-auto font-normal text-muted-foreground">{option.detail}</span>
-                  )}
-                </CheckboxButton>
-              ))}
-            </div>
-          )}
-        </FilterButton>
+      {/* The filters wrap beside the view toggle, which stays top right. */}
+      <div className="flex items-start gap-2">
+        <div className="flex flex-1 min-w-0 flex-wrap items-center gap-2">
+          <FilterButton
+            label={whenOptions().find((option) => option.value === when)!.label}
+            narrowing={when !== null}
+          >
+            {(close) => (
+              <div className="flex flex-col gap-1">
+                {whenOptions().map((option) => (
+                  <CheckboxButton
+                    key={option.value ?? "any"}
+                    checked={when === option.value}
+                    onClick={() => {
+                      update((params) => {
+                        if (option.value) params.set("when", option.value);
+                        else params.delete("when");
+                      });
+                      close();
+                    }}
+                  >
+                    {option.label}
+                    {option.detail && (
+                      <span className="ms-auto font-normal text-muted-foreground">{option.detail}</span>
+                    )}
+                  </CheckboxButton>
+                ))}
+              </div>
+            )}
+          </FilterButton>
 
-        <FilterButton label={regionsLabel(regions)} narrowing={regions.length < REGIONS.length}>
-          {(close) => (
-            <div className="flex flex-col gap-1">
-              {REGIONS.map((region) => (
-                <CheckboxButton
-                  key={region}
-                  checked={regions.includes(region)}
-                  onClick={() => update((params) => params.set("regions", listParam(toggled(regions, region), REGIONS)))}
-                >
-                  {regionLabel(region)}
-                </CheckboxButton>
-              ))}
-              <ListFooter
-                onAll={() => update((params) => params.set("regions", "all"))}
-                onDefaults={regionsParam ? () => update((params) => params.delete("regions")) : undefined}
-                onClose={close}
-              />
-            </div>
+          <FilterButton label={regionsLabel(regions)} narrowing={regions.length < REGIONS.length}>
+            {(close) => (
+              <div className="flex flex-col gap-1">
+                {REGIONS.map((region) => (
+                  <CheckboxButton
+                    key={region}
+                    checked={regions.includes(region)}
+                    onClick={() => update((params) => params.set("regions", listParam(toggled(regions, region), REGIONS)))}
+                  >
+                    {regionLabel(region)}
+                  </CheckboxButton>
+                ))}
+                <ListFooter
+                  onAll={() => update((params) => params.set("regions", "all"))}
+                  onDefaults={regionsParam ? () => update((params) => params.delete("regions")) : undefined}
+                  onClose={close}
+                />
+              </div>
+            )}
+          </FilterButton>
+
+          {genreCounts.length > 0 && (
+            <FilterButton label={genresLabel(genres, allGenres)} narrowing={!allGenres} className="md:hidden">
+              {(close) => (
+                <div className="flex flex-col gap-1">
+                  {genreCounts.map(({ genre, count }) => (
+                    <CheckboxButton
+                      key={genre}
+                      checked={!allGenres && genres.includes(genre)}
+                      onClick={() => toggleGenre(genre)}
+                    >
+                      {genre}
+                      <span className="ms-auto font-normal text-muted-foreground">{count}</span>
+                    </CheckboxButton>
+                  ))}
+                  <ListFooter
+                    onAll={() => update((params) => params.set("genres", "all"))}
+                    onDefaults={genresParam ? () => update((params) => params.delete("genres")) : undefined}
+                    onClose={close}
+                  />
+                </div>
+              )}
+            </FilterButton>
           )}
-        </FilterButton>
+
+          {browsing && browseFields.map(({ field, label, limit }) => (
+            <FilterButton key={field} label={label} narrowing={false} className="md:hidden">
+              {(close) => (
+                <div className="flex flex-col gap-1">
+                  {top(field, limit).map((s) => (
+                    <BrowseOption
+                      key={s.value}
+                      label={s.value}
+                      count={s.count}
+                      onClick={() => {
+                        addChip(field, s.value);
+                        close();
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </FilterButton>
+          ))}
+
+        </div>
 
         <ToggleGroup
           type="single"
           variant="outline"
-          className="ms-auto"
+          className="shrink-0"
           value={viewMode}
           onValueChange={(value) => value && update((params) => {
             if (value === "grid") params.delete("view");
@@ -493,28 +567,21 @@ export function Explore({ events }: { events: Event[] }) {
               label={genre}
               count={count}
               pressed={!allGenres && genres.includes(genre)}
-              onClick={() => update((params) => {
-                const next = toggled(allGenres ? [] : genres, genre);
-                params.set("genres", listParam(next, ALL_GENRES));
-              })}
+              onClick={() => toggleGenre(genre)}
             />
           ))}
         </BrowseSection>
       )}
 
-      {/* Somewhere to start before there's a search. */}
-      {!hasSearch && viewMode !== "map" && scope.length > 0 && (
-        <div className="flex flex-col gap-4 py-2">
-          <BrowseSection title="Venues & locations">
-            {top("place", 8).map((s) => (
-              <BrowseChip key={s.value} label={s.value} count={s.count} onClick={() => addChip("place", s.value)} />
-            ))}
-          </BrowseSection>
-          <BrowseSection title="Artists">
-            {top("artist", 10).map((s) => (
-              <BrowseChip key={s.value} label={s.value} count={s.count} onClick={() => addChip("artist", s.value)} />
-            ))}
-          </BrowseSection>
+      {browsing && (
+        <div className="hidden md:flex flex-col gap-4 py-2">
+          {browseFields.map(({ field, title, limit }) => (
+            <BrowseSection key={field} title={title}>
+              {top(field, limit).map((s) => (
+                <BrowseChip key={s.value} label={s.value} count={s.count} onClick={() => addChip(field, s.value)} />
+              ))}
+            </BrowseSection>
+          ))}
         </div>
       )}
 
