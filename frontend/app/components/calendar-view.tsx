@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Share2Icon } from "lucide-react";
-import { BookmarkIcon, CheckIcon } from "@heroicons/react/24/outline";
+import { CheckIcon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import moment from "moment";
 import { REGIONS, type Event } from "~/lib/data";
@@ -10,7 +10,6 @@ import { useRegion } from "~/contexts/region-context";
 import { useGenres } from "~/contexts/genre-context";
 import { matchesGenres } from "~/lib/genres";
 import { Button } from "~/components/ui/button";
-import { Toggle } from "~/components/ui/toggle";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer } from "./event-badges";
@@ -296,7 +295,7 @@ function DayCard({
         {hourLines.map(({ pct, hour }) => (
           <span
             key={hour}
-            className="absolute top-0 text-[9px] leading-none text-muted-foreground/60 -translate-x-1/2"
+            className="absolute top-0 text-[10px] leading-none text-muted-foreground/60 -translate-x-1/2"
             style={{ left: `${pct}%` }}
           >
             {hourMarkLabel(hour)}
@@ -372,7 +371,12 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
   }, [shareState]);
 
   async function share() {
-    const params = new URLSearchParams({ day, region: regionParam(regions) });
+    // Keeps the page's own params, like Home's ?view=calendar.
+    const params = new URLSearchParams(window.location.search);
+    params.set("day", day);
+    params.set("region", regionParam(regions));
+    params.delete("week");
+    params.delete("event");
     const url = `${window.location.origin}${window.location.pathname}?${params}`;
 
     // Put the params in the address bar too, so the link is still recoverable if
@@ -408,13 +412,12 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
   );
 }
 
-export function CalendarView({ events }: { events: Event[]; }) {
+export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
   const { selectedRegions } = useRegion();
   const { selectedGenres } = useGenres();
   const [searchParams] = useSearchParams();
   const { value: openDialogId, show } = useUrlDialogParam("event");
   const { isBookmarked } = useBookmarks();
-  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   const [activeMonth, setActiveMonth] = useState<string | null>(null);
   // Read once, on mount: a shared link opens on its day's week, then the tabs own the state.
   // Older links shared a whole week rather than a day, so fall back to that.
@@ -451,27 +454,10 @@ export function CalendarView({ events }: { events: Event[]; }) {
   const weeks = useMemo(() => groupByWeek(dayGroups), [dayGroups]);
   const months = useMemo(() => groupByMonth(weeks), [weeks]);
 
-  const bookmarkToggle = (
-    <Toggle
-      variant="outline"
-      pressed={bookmarkedOnly}
-      onPressedChange={setBookmarkedOnly}
-      aria-label="Bookmarked only"
-      title="Bookmarked only"
-      className="flex-none rounded-full"
-    >
-      {bookmarkedOnly ? <BookmarkSolidIcon /> : <BookmarkIcon />}
-    </Toggle>
-  );
-
-  // Keep the toggle on screen when it's what emptied the calendar, so it can be switched back off.
   if (months.length === 0) {
     return (
-      <div className="flex flex-col gap-3">
-        {bookmarkedOnly && <div className="flex justify-end">{bookmarkToggle}</div>}
-        <div className="text-center text-muted-foreground py-10">
-          {bookmarkedOnly ? "No bookmarked events to show." : "No events to show, check your filters."}
-        </div>
+      <div className="text-center text-muted-foreground py-10">
+        {bookmarkedOnly ? "No bookmarked events to show." : "No events to show, check your filters."}
       </div>
     );
   }
@@ -492,12 +478,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
   return (
     <div className="flex flex-col gap-3">
       <TabRow tabs={months} activeKey={currentMonth.key} onSelect={setActiveMonth} />
-      <div className="flex items-center gap-2">
-        <div className="flex-1 min-w-0">
-          <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
-        </div>
-        {bookmarkToggle}
-      </div>
+      <TabRow tabs={currentMonth.weeks} activeKey={currentWeek.key} onSelect={setActiveWeek} />
 
       <div className="flex flex-col gap-3">
         {currentWeek.groups.map((group) => (

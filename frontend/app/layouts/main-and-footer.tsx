@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from "react-router";
 import type { Route } from "./+types/main-and-footer";
-import { BeakerIcon, CalendarDaysIcon, HomeIcon, InformationCircleIcon, MapIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon, HomeIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Link } from "react-router";
 import { FooterNavLink } from "~/components/footer-nav-link";
 import { ThemeProvider } from "~/contexts/theme-context";
@@ -10,7 +10,8 @@ import { GenreProvider } from "~/contexts/genre-context";
 import { SettingsMenu } from "~/components/settings-menu";
 import { NavSearch } from "~/components/nav-search";
 
-const ROUTES_WITHOUT_FILTERS = ["/map", "/about"];
+// Saved ignores the region and genre filters, and About lists no events.
+const ROUTES_WITHOUT_FILTERS = ["/saved", "/about"];
 
 function Navbar() {
   const { pathname } = useLocation();
@@ -60,25 +61,14 @@ export default function Component(_: Route.ComponentProps) {
                     icon={<HomeIcon className="size-6" />}
                   />
                   <FooterNavLink
-                    to="/events"
-                    label="Events"
-                    icon={<BeakerIcon className="size-6" />}
+                    to="/explore"
+                    label="Explore"
+                    icon={<MagnifyingGlassIcon className="size-6" />}
                   />
                   <FooterNavLink
-                    to="/calendar"
-                    label="Calendar"
-                    icon={<CalendarDaysIcon className="size-6" />}
-                  />
-                  <FooterNavLink
-                    to="/map"
-                    label="Map"
-                    icon={<MapIcon className="size-6" />}
-                  />
-                  <FooterNavLink
-                    to="/about"
-                    label="About"
-                    icon={<InformationCircleIcon className="size-6" />}
-                  // icon={<EllipsisVerticalIcon className="size-6" />}
+                    to="/saved"
+                    label="Saved"
+                    icon={<BookmarkIcon className="size-6" />}
                   />
                 </div>
               </footer>

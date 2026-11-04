@@ -27,6 +27,12 @@ export function isFutureEvent(
   return moment().isSameOrBefore(moment(event.finish_at));
 }
 
+// A rave week runs Tuesday to Monday, so a Sunday-into-Monday party stays in
+// the same week as its weekend.
+export function raveWeekStart(day: moment.Moment) {
+  return day.clone().startOf("day").subtract((day.isoWeekday() + 5) % 7, "days");
+}
+
 export function isHappeningNow(
   event: Event
 ): boolean {

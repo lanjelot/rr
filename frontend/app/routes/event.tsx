@@ -1,5 +1,4 @@
 import { redirect } from "react-router";
-import { EventList } from "~/components/event-list";
 import type { Route } from "./+types/event";
 import { fetchEvent } from "~/lib/data";
 import { EventDetails } from "~/components/event-details";
@@ -15,7 +14,7 @@ export async function clientLoader({
   params,
 }: Route.ClientLoaderArgs) {
   const event = await fetchEvent(params.eventId);
-  if (!event) throw redirect("/events");
+  if (!event) throw redirect("/explore");
   return { event };
 }
 

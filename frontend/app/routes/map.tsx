@@ -1,42 +1,16 @@
+import { redirect } from "react-router";
 import type { Route } from "./+types/map";
-import { fetchEvents } from "~/lib/data";
-import { EventMap } from "~/components/event-map";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator } from "~/components/ui/breadcrumb";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Map | The Rave Roster" },
-    { name: "description", content: "See upcoming event on a map of Australia" },
-  ];
+// The map is now a view on Explore. A shared viewport (?bbox=) carries over; the
+// old date range doesn't, as Explore filters dates by week instead.
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  const params = new URL(request.url).searchParams;
+  params.delete("from");
+  params.delete("to");
+  params.set("view", "map");
+  throw redirect(`/explore?${params}`);
 }
 
-export async function clientLoader({
-  params,
-}: Route.ClientLoaderArgs) {
-  const events = await fetchEvents();
-  return { events };
-}
-
-export default function MapPage({
-  loaderData,
-}: Route.ComponentProps) {
-  const { events } = loaderData;
-
-  return (
-    <div className="flex flex-col gap-3">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/">Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Map</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <EventMap events={events} />
-    </div>
-  );
+export default function MapPage() {
+  return null;
 }

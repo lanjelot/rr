@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Event } from "~/lib/data";
-import { cn, isMultiDay } from "~/lib/utils";
+import { cn, isMultiDay, raveWeekStart as weekStart } from "~/lib/utils";
 import { EventCompact } from "./event-compact";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { useRegion } from "~/contexts/region-context";
 import { useGenres } from "~/contexts/genre-context";
+import { useBookmarks } from "~/contexts/bookmarks-context";
 import { useSearchParams } from "react-router";
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react";
 import { Button } from "./ui/button";
@@ -40,12 +41,6 @@ function groupEventsByDay(events: Event[]) {
   return [...byDay.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([day, events]) => ({ day, events }));
-}
-
-// A rave week runs Tuesday to Monday, so a Sunday-into-Monday party stays in
-// the same week as its weekend.
-function weekStart(day: moment.Moment) {
-  return day.clone().startOf("day").subtract((day.isoWeekday() + 5) % 7, "days");
 }
 
 // Every week shows at least its Friday to Sunday, even on days with nothing on.
@@ -210,13 +205,20 @@ function DayPage({ day, events, week, render }: { day: string; events: Event[]; 
   );
 }
 
-export function EventsOverview({ events }: { events: Event[]; }) {
+export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
   const { selectedRegions } = useRegion();
   const { selectedGenres, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const openEvent = searchParams.get("event");
+  const { isBookmarked } = useBookmarks();
 
-  const regionEvents = events.filter((event: Event) => selectedRegions.includes(event.region) && matchesSelectedGenres(event));
+  const regionEvents = events.filter((event: Event) =>
+    selectedRegions.includes(event.region) &&
+    matchesSelectedGenres(event) &&
+    // Keep the open event while its dialog is up, so un-bookmarking it there
+    // doesn't pull it out from under the dialog.
+    (!bookmarkedOnly || isBookmarked(event.id) || parseDialogId(openEvent)?.id === String(event.id))
+  );
   const allGroups = groupEventsByDay(regionEvents);
   const weekLabel = weekLabeller(allGroups);
   const today = moment().format(DAY_FMT);
@@ -279,13 +281,13 @@ export function EventsOverview({ events }: { events: Event[]; }) {
     setIndex(i);
   }, [groups.length]);
 
-  // Jump straight to the starting day, and back to it if the region or genre selection
-  // changes the set of days.
+  // Jump straight to the starting day, and back to it if the region, genre or
+  // bookmark filter changes the set of days.
   useLayoutEffect(() => {
     const i = initialIndex();
     setIndex(i);
     pagerRef.current?.scrollTo({ left: pageLeft(i), behavior: "instant" });
-  }, [selectedRegions.join(","), selectedGenres.join(",")]);
+  }, [selectedRegions.join(","), selectedGenres.join(","), bookmarkedOnly]);
 
   // The pager is clipped to the current page's height so a short day doesn't
   // sit above a screen of blank space left by its taller neighbours.
@@ -366,7 +368,9 @@ export function EventsOverview({ events }: { events: Event[]; }) {
   };
 
   if (groups.length === 0) {
-    return <div className="text-center">... nothing yet 🤞 stay tuned ...</div>;
+    return bookmarkedOnly
+      ? <div className="text-center text-muted-foreground py-10">No bookmarked events to show.</div>
+      : <div className="text-center">... nothing yet 🤞 stay tuned ...</div>;
   }
 
   return (

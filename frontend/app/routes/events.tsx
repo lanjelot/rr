@@ -1,34 +1,11 @@
-import { EventList } from "~/components/event-list";
-import type { ShouldRevalidateFunctionArgs } from "react-router";
+import { redirect } from "react-router";
 import type { Route } from "./+types/events";
-import { fetchEvents } from "~/lib/data";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "Events | The Rave Roster" },
-    { name: "description", content: "Browse upcoming events across Australia" },
-  ];
+// The Events page became Explore, which reads the same search params.
+export async function clientLoader({ request }: Route.ClientLoaderArgs) {
+  throw redirect(`/explore${new URL(request.url).search}`);
 }
 
-// Typing in the search box rewrites the URL on every keystroke; only refetch
-// when actually navigating to the page.
-export function shouldRevalidate({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
-  if (currentUrl.pathname === nextUrl.pathname) return false;
-  return defaultShouldRevalidate;
+export default function Events() {
+  return null;
 }
-
-export async function clientLoader({
-  params,
-}: Route.ClientLoaderArgs) {
-  const events = await fetchEvents();
-  return { events };
-}
-
-export default function Events({
-  loaderData,
-}: Route.ComponentProps) {
-  const { events } = loaderData;
-
-  return <EventList events={events} />;
-}
-

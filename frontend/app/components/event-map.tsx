@@ -1,35 +1,19 @@
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Popup, Marker, useMapEvents } from "react-leaflet";
 import type { LatLngBounds, LatLngBoundsLiteral } from "leaflet";
 import { Link, useSearchParams } from "react-router";
 import { Share2Icon } from "lucide-react";
-import moment from "moment";
 import "leaflet/dist/leaflet.css";
 import "~/lib/leaflet-icons";
 import type { Event } from "~/lib/data";
 import { eventDate } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
-import { Label } from "~/components/ui/label";
-import { Slider } from "~/components/ui/slider";
 import { ThumbnailCard } from "~/components/thumbnail-card";
 import { EventDialog, EventListDialog } from "./event-details-card";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 
 const AUSTRALIA_CENTER: [number, number] = [-25.2744, 133.7751];
 const AUSTRALIA_ZOOM = 4;
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-// Days since the epoch for a moment's wall-clock date, so week arithmetic is
-// immune to DST shifts.
-function dayIndex(value: moment.Moment) {
-  return Math.floor(Date.UTC(value.year(), value.month(), value.date()) / DAY_MS);
-}
-
-// start_at carries the event's region offset, so parseZone keeps the event's own
-// date — the one eventDate() displays.
-function eventDayIndex(startAt: string) {
-  return dayIndex(moment.parseZone(startAt));
-}
 
 // A shared link carries the viewport as "south,west,north,east".
 function parseBbox(value: string | null): LatLngBoundsLiteral | null {
@@ -44,16 +28,19 @@ function parseBbox(value: string | null): LatLngBoundsLiteral | null {
   ];
 }
 
-// Shared links carry plain dates; the slider works in day offsets from `base`.
-function parseDayParam(value: string | null, base: number) {
-  if (!value) return null;
-  const parsed = moment(value, "YYYY-MM-DD", true);
-  return parsed.isValid() ? dayIndex(parsed) - base : null;
-}
-
-// Snap to the Mon–Sun boundaries the slider steps on, then keep it in range.
-function clampWeek(day: number, min: number, max: number) {
-  return Math.min(Math.max(Math.round(day / 7) * 7, min), max);
+// The box around every event, or null when there's no area to fit (a single
+// spot would zoom in to street level).
+function eventsBbox(events: { latitude: number; longitude: number }[]): LatLngBoundsLiteral | null {
+  if (events.length === 0) return null;
+  const lats = events.map((event) => event.latitude);
+  const lngs = events.map((event) => event.longitude);
+  const south = Math.min(...lats), north = Math.max(...lats);
+  const west = Math.min(...lngs), east = Math.max(...lngs);
+  if (south === north && west === east) return null;
+  return [
+    [south, west],
+    [north, east],
+  ];
 }
 
 // Reports the map's viewport to the parent whenever panning or zooming settles,
@@ -71,52 +58,10 @@ function BoundsWatcher({ onChange }: { onChange: (bounds: LatLngBounds) => void 
   return null;
 }
 
-// Radix's slider thumb attaches a fresh callback ref on every render and sets
-// state from it, so each re-render queues an update during the commit phase.
-// Panning the map re-renders EventMap on every moveend/zoomend, and those
-// commit-phase updates stack up until React trips its nested-update limit
-// ("Maximum update depth exceeded"). Memoizing keeps viewport changes — which
-// the slider doesn't care about — from re-rendering it at all.
-const DateRangeSlider = memo(function DateRangeSlider({
-  monday,
-  maxDay,
-  dayRange,
-  onChange,
-}: {
-  monday: moment.Moment;
-  maxDay: number;
-  dayRange: [number, number];
-  onChange: (value: number[]) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <Label htmlFor="slider-date-range">Date Range</Label>
-        <span className="text-sm text-muted-foreground">
-          {monday.clone().add(dayRange[0], "days").format("ddd D MMM YYYY")}
-          {" – "}
-          {monday.clone().add(dayRange[1] - 1, "days").format("ddd D MMM YYYY")}
-        </span>
-      </div>
-      <Slider
-        id="slider-date-range"
-        min={0}
-        max={maxDay}
-        step={7}
-        minStepsBetweenThumbs={1}
-        value={dayRange}
-        onValueChange={onChange}
-      />
-    </div>
-  );
-});
-
+// The events are already filtered (Explore's date, genre and region filters), so
+// the map only adds the viewport: markers for all of them, and cards for the
+// ones on screen.
 export function EventMap({ events }: { events: Event[] }) {
-  // Anchor the slider on the Monday of the current week so every step lands on a
-  // Mon–Sun week boundary.
-  const monday = useMemo(() => moment().startOf("isoWeek"), []);
-  const base = useMemo(() => dayIndex(monday), [monday]);
-
   const located = useMemo(
     () =>
       events.filter(
@@ -126,38 +71,16 @@ export function EventMap({ events }: { events: Event[] }) {
     [events]
   );
 
-  // Number of days from `base` to the end of the last week containing an event,
-  // always a multiple of 7 so the slider ends on a Sunday.
-  const maxDay = useMemo(() => {
-    const lastDay = located.reduce(
-      (max, event) => Math.max(max, eventDayIndex(event.start_at) - base),
-      0
-    );
-    return (Math.floor(lastDay / 7) + 1) * 7;
-  }, [located, base]);
-
   const [searchParams, setSearchParams] = useSearchParams();
   const { show } = useUrlDialogParam("event");
 
-  // Both read once, on mount: after that the map and slider own their state, and
-  // the URL is only rewritten when someone shares the view.
-  const [sharedBbox] = useState(() => parseBbox(searchParams.get("bbox")));
-  const [dayRange, setDayRange] = useState<[number, number]>(() => {
-    const from = parseDayParam(searchParams.get("from"), base);
-    const to = parseDayParam(searchParams.get("to"), base);
-    if (from === null && to === null) return [0, maxDay];
-    const start = clampWeek(from ?? 0, 0, maxDay - 7);
-    return [start, clampWeek(to === null ? maxDay : to + 1, start + 7, maxDay)];
-  });
+  // Read once, on mount: after that the map owns its viewport, and the URL is
+  // only rewritten when someone shares the view. Without a shared one, it opens
+  // on the events, which are usually in a region or two.
+  const [initialBounds] = useState(() => parseBbox(searchParams.get("bbox")) ?? eventsBbox(located));
 
   const [bounds, setBounds] = useState<LatLngBounds | null>(null);
   const [shareState, setShareState] = useState<"idle" | "copied" | "failed">("idle");
-
-  // Stable so the memoized slider isn't re-rendered by map movement.
-  const changeDayRange = useCallback(
-    (value: number[]) => setDayRange(value as [number, number]),
-    []
-  );
 
   // getBounds() hands back a fresh object every time, so drop the ones that
   // describe the same viewport (a click, or the moveend that trails a zoom)
@@ -166,39 +89,30 @@ export function EventMap({ events }: { events: Event[] }) {
     setBounds((previous) => (previous?.equals(next) ? previous : next));
   }, []);
 
-  const visible = useMemo(
-    () =>
-      located.filter((event) => {
-        const day = eventDayIndex(event.start_at) - base;
-        return day >= dayRange[0] && day < dayRange[1];
-      }),
-    [located, base, dayRange]
-  );
-
-  // The markers stay on every event in the date range; only the card list
-  // follows the viewport, since offscreen markers are invisible anyway.
+  // The markers stay on every event; only the card list follows the viewport,
+  // since offscreen markers are invisible anyway.
   const inView = useMemo(
     () =>
       bounds
-        ? visible.filter((event) => bounds.contains([event.latitude, event.longitude]))
-        : visible,
-    [visible, bounds]
+        ? located.filter((event) => bounds.contains([event.latitude, event.longitude]))
+        : located,
+    [located, bounds]
   );
 
   const groups = useMemo(() => {
-    const byLocation = new Map<string, typeof visible>();
-    for (const event of visible) {
+    const byLocation = new Map<string, typeof located>();
+    for (const event of located) {
       const key = `${event.latitude.toFixed(3)},${event.longitude.toFixed(3)}`;
       const group = byLocation.get(key);
       if (group) group.push(event);
       else byLocation.set(key, [event]);
     }
     return [...byLocation.values()];
-  }, [visible]);
+  }, [located]);
 
-  // Held as elements rather than data: the markers only depend on the date
-  // range, so reusing them lets React skip the whole layer — popups and their
-  // dialogs included — when only the viewport changed.
+  // Held as elements rather than data: the markers only depend on the events,
+  // so reusing them lets React skip the whole layer — popups and their dialogs
+  // included — when only the viewport changed.
   const markers = useMemo(
     () =>
       groups.map((group) => (
@@ -229,7 +143,9 @@ export function EventMap({ events }: { events: Event[] }) {
   }, [shareState]);
 
   async function share() {
-    const params = new URLSearchParams();
+    // Keeps Explore's search and filters, so the link shows the same events.
+    const params = new URLSearchParams(searchParams);
+    params.delete("event");
     if (bounds) {
       const southWest = bounds.getSouthWest();
       const northEast = bounds.getNorthEast();
@@ -240,8 +156,6 @@ export function EventMap({ events }: { events: Event[] }) {
           .join(",")
       );
     }
-    params.set("from", monday.clone().add(dayRange[0], "days").format("YYYY-MM-DD"));
-    params.set("to", monday.clone().add(dayRange[1] - 1, "days").format("YYYY-MM-DD"));
 
     // Put the params in the address bar too, so the link is still recoverable if
     // the clipboard is unavailable (older browsers, or a non-HTTPS origin).
@@ -259,15 +173,6 @@ export function EventMap({ events }: { events: Event[] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      {maxDay > 7 && (
-        <DateRangeSlider
-          monday={monday}
-          maxDay={maxDay}
-          dayRange={dayRange}
-          onChange={changeDayRange}
-        />
-      )}
-
       <div className="relative overflow-hidden">
         {/* Overlaid on the top-right corner: Leaflet's own controls own the top
             left, and z-[1000] clears its control panes. */}
@@ -288,9 +193,10 @@ export function EventMap({ events }: { events: Event[] }) {
         </div>
 
         <MapContainer
-          bounds={sharedBbox ?? undefined}
-          center={sharedBbox ? undefined : AUSTRALIA_CENTER}
-          zoom={sharedBbox ? undefined : AUSTRALIA_ZOOM}
+          bounds={initialBounds ?? undefined}
+          boundsOptions={{ padding: [24, 24] }}
+          center={initialBounds ? undefined : AUSTRALIA_CENTER}
+          zoom={initialBounds ? undefined : AUSTRALIA_ZOOM}
           scrollWheelZoom
           className="h-[50vh] w-full rounded-lg z-0"
         >
@@ -304,7 +210,7 @@ export function EventMap({ events }: { events: Event[] }) {
       </div>
       {inView.length === 0 ? (
         <div className="text-center text-muted-foreground py-10">
-          No events in this area, try zooming out or widening the date range.
+          No events in this area, try zooming out or widening your filters.
         </div>
       ) : (
         <>

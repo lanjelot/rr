@@ -9,6 +9,7 @@ import {
   SunIcon,
 } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { Link } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
 import { Separator } from "~/components/ui/separator";
@@ -23,12 +24,12 @@ import { cn } from "~/lib/utils";
 // no genre is picked.
 const SELECTABLE_GENRES = GENRES.filter(({ genre }) => genre !== "Electronic");
 
-function toggled(list: string[], item: string): string[] {
+export function toggled(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((i) => i !== item) : [...list, item];
 }
 
 // A ticked row, so it reads as a multiple choice.
-function CheckboxButton({
+export function CheckboxButton({
   checked,
   onClick,
   className,
@@ -202,9 +203,9 @@ function SubView({ title, onBack, children }: { title: string; onBack: () => voi
   );
 }
 
-// The region and genre filters, plus the theme. The filters open as their own
-// view, sliding in over the main one. Pages that don't filter events only get
-// the theme.
+// The region and genre filters, plus the theme and a link to About. The filters
+// open as their own view, sliding in over the main one. Pages that don't filter
+// events leave them out.
 export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
   const { selectedGenres } = useGenres();
   const { selectedRegions } = useRegion();
@@ -232,7 +233,7 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
       <PopoverTrigger asChild>
         <button
           className="relative p-1 rounded-md hover:bg-black/10 dark:hover:bg-white/10 transition-colors cursor-pointer"
-          aria-label={showFilters ? "Filters and theme" : "Theme"}
+          aria-label={showFilters ? "Filters and settings" : "Settings"}
         >
           <AdjustmentsHorizontalIcon className="size-5" />
           {genreFilterOn && (
@@ -276,6 +277,12 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
               </>
             )}
             <ThemeButton />
+            <Button variant="ghost" className="justify-start" asChild>
+              <Link to="/about" onClick={() => openChange(false)}>
+                About
+                <InformationCircleIcon className="ms-auto" />
+              </Link>
+            </Button>
           </div>
         )}
       </PopoverContent>
