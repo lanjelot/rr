@@ -16,7 +16,7 @@ import { Separator } from "~/components/ui/separator";
 import { useGenres } from "~/contexts/genre-context";
 import { useRegion } from "~/contexts/region-context";
 import { useTheme } from "~/contexts/theme-context";
-import { REGIONS, regionLabel } from "~/lib/data";
+import { REGIONS, SUBREGIONS, regionLabel } from "~/lib/data";
 import { GENRES } from "~/lib/genres";
 import { cn } from "~/lib/utils";
 
@@ -131,24 +131,94 @@ function GenreList({ onClose }: { onClose: () => void }) {
   );
 }
 
-function RegionList({ onClose }: { onClose: () => void }) {
-  const { selectedRegions, setSelectedRegions } = useRegion();
+function RegionList({ onClose, onOpenSubregions }: { onClose: () => void; onOpenSubregions: (region: string) => void }) {
+  const { selectedRegions, setSelectedRegions, excludedSubregions } = useRegion();
 
   return (
     <div className="flex flex-col gap-1">
-      {REGIONS.map((region) => (
-        <CheckboxButton
-          key={region}
-          checked={selectedRegions.includes(region)}
-          onClick={() => setSelectedRegions((prev) => toggled(prev, region))}
-        >
-          {regionLabel(region)}
-        </CheckboxButton>
-      ))}
+      {REGIONS.map((region) => {
+        const subregions = SUBREGIONS[region];
+        const checkbox = (
+          <CheckboxButton
+            key={region}
+            className={subregions && "flex-1"}
+            checked={selectedRegions.includes(region)}
+            onClick={() => setSelectedRegions((prev) => toggled(prev, region))}
+          >
+            {regionLabel(region)}
+          </CheckboxButton>
+        );
+        if (!subregions) return checkbox;
+
+        const excluded = subregions.filter((s) => excludedSubregions.includes(s)).length;
+        return (
+          <div key={region} className="flex gap-1">
+            {checkbox}
+            <Button
+              variant="ghost"
+              className="text-muted-foreground font-normal px-2"
+              aria-label={`${regionLabel(region)} subregions`}
+              onClick={() => onOpenSubregions(region)}
+            >
+              {excluded > 0 && `${subregions.length - excluded}/${subregions.length}`}
+              <ChevronRightIcon />
+            </Button>
+          </div>
+        );
+      })}
       <Separator orientation="horizontal" />
       <ListFooter
         canClear={selectedRegions.length > 0}
         onClear={() => setSelectedRegions([])}
+        onClose={onClose}
+      />
+    </div>
+  );
+}
+
+// The subregions of one region, to narrow it down. All ticked means the whole region.
+function SubregionList({ region, onClose }: { region: string; onClose: () => void }) {
+  const { selectedRegions, setSelectedRegions, excludedSubregions, setExcludedSubregions } = useRegion();
+  const subregions = SUBREGIONS[region];
+  const regionOn = selectedRegions.includes(region);
+
+  function toggle(subregion: string) {
+    const others = excludedSubregions.filter((s) => !subregions.includes(s));
+    if (regionOn) {
+      const excluded = toggled(excludedSubregions, subregion);
+      if (subregions.every((s) => excluded.includes(s))) {
+        // Unticking the last subregion unticks the region, so ticking it again brings back all of it.
+        setExcludedSubregions(others);
+        setSelectedRegions((prev) => prev.filter((r) => r !== region));
+      } else {
+        setExcludedSubregions(excluded);
+      }
+      return;
+    }
+    // From an unticked region, ticking a subregion switches the region on with just that one.
+    setExcludedSubregions([...others, ...subregions.filter((s) => s !== subregion)]);
+    setSelectedRegions((prev) => [...prev, region]);
+  }
+
+  return (
+    <div className="flex flex-col gap-1">
+      {subregions.map((subregion) => (
+        <CheckboxButton
+          key={subregion}
+          checked={regionOn && !excludedSubregions.includes(subregion)}
+          onClick={() => toggle(subregion)}
+        >
+          {subregion}
+        </CheckboxButton>
+      ))}
+      <p className="px-2.5 pt-1 pb-2 text-xs text-muted-foreground">
+        With all ticked, you see the whole of {regionLabel(region)}. Untick some to only see events in the
+        ticked ones.
+      </p>
+      <Separator orientation="horizontal" />
+      <ListFooter
+        canClear={subregions.some((s) => excludedSubregions.includes(s))}
+        onClear={() => setExcludedSubregions(excludedSubregions.filter((s) => !subregions.includes(s)))}
         onClose={onClose}
       />
     </div>
@@ -172,7 +242,7 @@ function ThemeButton() {
   );
 }
 
-type View = "main" | "regions" | "genres";
+type View = "main" | "regions" | "genres" | { subregionsOf: string };
 
 // What a row's list has selected: a couple of names, or how many.
 function summary(selected: string[], label: (item: string) => string = (i) => i): string {
@@ -216,7 +286,8 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
   const genreFilterOn = showFilters && selectedGenres.length > 0;
 
   function back() {
-    setView("main");
+    // A subregion list goes back to the region list it was opened from.
+    setView(typeof view === "object" ? "regions" : "main");
     setReturned(true);
   }
 
@@ -242,9 +313,16 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-72 p-1 gap-1 max-h-[80vh] overflow-hidden">
-        {view === "regions" ? (
+        {typeof view === "object" ? (
+          <SubView title={regionLabel(view.subregionsOf)} onBack={back}>
+            <SubregionList region={view.subregionsOf} onClose={() => openChange(false)} />
+          </SubView>
+        ) : view === "regions" ? (
           <SubView title="Regions" onBack={back}>
-            <RegionList onClose={() => openChange(false)} />
+            <RegionList
+              onClose={() => openChange(false)}
+              onOpenSubregions={(region) => setView({ subregionsOf: region })}
+            />
           </SubView>
         ) : view === "genres" ? (
           <SubView title="Genres" onBack={back}>

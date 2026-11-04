@@ -8,7 +8,7 @@ import "~/lib/leaflet-icons";
 import type { Event } from "~/lib/data";
 import { eventDate } from "~/lib/utils";
 import { Button } from "~/components/ui/button";
-import { ThumbnailCard } from "~/components/thumbnail-card";
+import { EventThumbnailCard } from "~/components/event-thumbnail-card";
 import { EventDialog, EventListDialog } from "./event-details-card";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 
@@ -217,7 +217,7 @@ export function EventMap({ events }: { events: Event[] }) {
           <div className="font-medium">{inView.length} events in view</div>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {inView.map((event) => (
-              <ThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
+              <EventThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
             ))}
           </div>
         </>

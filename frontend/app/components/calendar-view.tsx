@@ -327,7 +327,7 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 }
 
 export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
-  const { selectedRegions } = useRegion();
+  const { selectedRegions, excludedSubregions, inSelectedRegions } = useRegion();
   const { selectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const { value: openDialogId, show } = useUrlDialogParam("event");
@@ -338,7 +338,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     () =>
       events
         .filter((event) =>
-          selectedRegions.includes(event.region) &&
+          inSelectedRegions(event) &&
           matchesGenres(event, selectedGenres) &&
           (isThisShowWeek(event) || isFutureEvent(event)) &&
           // Keep the open event while its dialog is up, so un-bookmarking it there
@@ -346,7 +346,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
           (!bookmarkedOnly || isBookmarked(event.id) || openDialogId?.startsWith(`${event.id}-`))
         )
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
-    [events, selectedRegions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
+    [events, selectedRegions, excludedSubregions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
   // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
@@ -408,7 +408,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     const i = initialIndex();
     setIndex(i);
     if (dayGroups[i]) pendingScroll.current = { day: dayGroups[i].day, behavior: "instant" };
-  }, [selectedRegions.join(","), selectedGenres.join(","), bookmarkedOnly]);
+  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), bookmarkedOnly]);
 
   // Brings the day's card up under the stuck strip. A week's first day goes
   // back to the top of the page instead, so the controls above come back too.

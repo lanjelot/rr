@@ -6,7 +6,7 @@ import { fetchEvents, type Event } from "~/lib/data";
 import { isFutureEvent } from "~/lib/utils";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
-import { EventCompact } from "~/components/event-compact";
+import { EventCompactCard } from "~/components/event-compact-card";
 import { EventListDialog } from "~/components/event-details-card";
 
 export function meta({}: Route.MetaArgs) {
@@ -75,7 +75,7 @@ export default function Saved({
             {moment(day, "YYYY-MM-DD").format("dddd D MMMM")}
           </div>
           {events.map((event) => (
-            <EventCompact key={event.id} event={event} onClick={() => show(event.id)} />
+            <EventCompactCard key={event.id} event={event} onClick={() => show(event.id)} />
           ))}
         </div>
       ))}

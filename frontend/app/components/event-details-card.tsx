@@ -199,7 +199,7 @@ function EventDialogContent({ className, ...props }: ComponentProps<typeof Dialo
 // `children` are overlaid on the flyer, for EventListDialog's counter.
 export function EventDetailsCard({ event, eventDay, children }: { event: Event; eventDay?: EventDay; children?: ReactNode }) {
   return (
-    <div className="relative flex-1 min-h-0 flex flex-col gap-3">
+    <div className="flex-1 min-h-0 flex flex-col gap-3">
       <div className="relative shrink-0">
         {/* Keyed so stepping to another event blanks the old flyer rather than
             leaving it up beside the new event's details until the new one loads. */}
@@ -249,19 +249,26 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
 
       {/* Outside the scrolling details, so they stay at the bottom of the card
           whether or not the details are long enough to scroll. */}
-      <div className="shrink-0 flex items-center gap-5 px-4 pb-4 text-muted-foreground">
-        {event.ticket && (
-          <Button asChild variant="blue" className="flex-1">
-            <a href={event.ticket} target="_blank" rel="noopener noreferrer">
-              Get Tickets
-              <ArrowTopRightOnSquareIcon />
-            </a>
-          </Button>
-        )}
-        <div className="ms-auto flex items-center gap-5">
-          <ShareEventButton event={event} />
-          <BookmarkButton eventId={event.id} />
-        </div>
+      <EventActions event={event} className="shrink-0 px-4 pb-4" />
+    </div>
+  );
+}
+
+// Get Tickets, share and bookmark, along the bottom of an event card.
+export function EventActions({ event, className }: { event: Event; className?: string }) {
+  return (
+    <div className={cn("flex items-center gap-5 text-muted-foreground", className)}>
+      {event.ticket && (
+        <Button asChild variant="blue" className="flex-1">
+          <a href={event.ticket} target="_blank" rel="noopener noreferrer">
+            Get Tickets
+            <ArrowTopRightOnSquareIcon />
+          </a>
+        </Button>
+      )}
+      <div className="ms-auto flex items-center gap-5">
+        <ShareEventButton event={event} />
+        <BookmarkButton eventId={event.id} />
       </div>
     </div>
   );

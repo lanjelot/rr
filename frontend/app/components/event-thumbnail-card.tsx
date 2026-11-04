@@ -13,7 +13,7 @@ function eventDateTime(
 // Opening the details is left to the caller (an EventListDialog over the whole
 // list), so this is just the clickable card. The bookmark button is a sibling
 // overlaid on the card, since buttons can't nest.
-export function ThumbnailCard({ event, onClick }: { event: Event; onClick: () => void; }) {
+export function EventThumbnailCard({ event, onClick }: { event: Event; onClick: () => void; }) {
 
   return (
     <div className="relative">

@@ -71,12 +71,11 @@ export type Event = {
   longitude: number | null;
 }
 
-export const REGIONS = ["NQLD", "QLD", "NNSW", "NSW", "ACT", "VIC", "TAS", "SA", "WA", "NT"];
+export const REGIONS = ["NQLD", "QLD", "NSW", "ACT", "VIC", "TAS", "SA", "WA", "NT"];
 
 export const REGION_LABELS: Record<string, string> = {
   NQLD: "North QLD",
   QLD: "South QLD",
-  NNSW: "North NSW",
   NSW: "NSW",
   ACT: "ACT",
   VIC: "VIC",
@@ -91,13 +90,37 @@ export const ZONES: { id: string; label: string; regions: string[] }[] = [
   { id: "WA", label: "WA", regions: ["WA"] },
   { id: "NT", label: "NT", regions: ["NT"] },
   { id: "FQLD", label: "Far North QLD", regions: ["NQLD"] },
-  { id: "QLD+NNSW", label: "QLD + North NSW", regions: ["QLD", "NNSW"] },
+  { id: "QLD+NNSW", label: "QLD + North NSW", regions: ["QLD"] },
   { id: "NSW", label: "NSW", regions: ["NSW"] },
   { id: "ACT", label: "ACT", regions: ["ACT"] },
   { id: "VIC", label: "VIC", regions: ["VIC"] },
   { id: "TAS", label: "TAS", regions: ["TAS"] },
   { id: "SA", label: "SA", regions: ["SA"] },
 ];
+
+// The areas a region can be narrowed down to in the settings menu, matched
+// against an event's zone. With every subregion ticked the whole region shows,
+// including events outside any subregion. Untick some and only events in the
+// ticked ones show.
+export const SUBREGIONS: Record<string, string[]> = {
+  QLD: ["Sunshine Coast", "Brisbane", "Gold Coast", "Northern Rivers"],
+};
+
+export const ALL_SUBREGIONS = Object.values(SUBREGIONS).flat();
+
+// Regions the API still has of their own, but that are shown as a subregion of
+// another. NNSW keeps its own region (and NSW timezone) in the backend.
+const PARENT_REGIONS: Record<string, string> = {
+  NNSW: "QLD",
+};
+
+export function inRegions(event: Event, regions: string[], excludedSubregions: string[] = []): boolean {
+  const region = PARENT_REGIONS[event.region] ?? event.region;
+  if (!regions.includes(region)) return false;
+  const subregions = SUBREGIONS[region];
+  if (!subregions?.some((s) => excludedSubregions.includes(s))) return true;
+  return subregions.includes(event.zone) && !excludedSubregions.includes(event.zone);
+}
 
 export function regionLabel(region: string): string {
   return REGION_LABELS[region] ?? region;

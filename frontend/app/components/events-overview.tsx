@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { Event } from "~/lib/data";
 import { cn, isMultiDay, raveWeekStart as weekStart } from "~/lib/utils";
-import { EventCompact } from "./event-compact";
+import { EventCompactCard } from "./event-compact-card";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
@@ -194,11 +194,12 @@ export function DayStripBar({
 }) {
   const barRef = useRef<HTMLDivElement>(null);
 
-  // See-through at rest, and only gets a backing once it's stuck to the top
-  // with events scrolling under it.
+  // See-through at rest, and only gets a rounded backing once it's stuck to
+  // the top (floating 0.5rem below it, matching top-2) with events scrolling
+  // under it.
   const [stuck, setStuck] = useState(false);
   useEffect(() => {
-    const onScroll = () => setStuck((barRef.current?.parentElement?.getBoundingClientRect().top ?? 0) < 0);
+    const onScroll = () => setStuck((barRef.current?.parentElement?.getBoundingClientRect().top ?? 0) < 8);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -208,7 +209,7 @@ export function DayStripBar({
     <div
       ref={barRef}
       className={cn(
-        "sticky top-0 z-10 -mx-3 px-3 py-2 flex items-center gap-1 border-b border-transparent transition-colors",
+        "sticky top-2 z-10 -mx-3 px-3 py-2 flex items-center gap-1 rounded-2xl border border-transparent transition-colors",
         stuck && "backdrop-blur-md bg-zinc-100/80 border-black/10 dark:bg-zinc-900/80 dark:border-white/10",
       )}
     >
@@ -246,21 +247,21 @@ function DayPage({ day, events, week, render }: { day: string; events: Event[]; 
         {moment(day, DAY_FMT).format("dddd D MMMM")}
       </div>
       {render && events.map((event: Event) => (
-        <EventCompact key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
+        <EventCompactCard key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
       ))}
     </div>
   );
 }
 
 export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
-  const { selectedRegions } = useRegion();
+  const { selectedRegions, excludedSubregions, inSelectedRegions } = useRegion();
   const { selectedGenres, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const openEvent = searchParams.get("event");
   const { isBookmarked } = useBookmarks();
 
   const regionEvents = events.filter((event: Event) =>
-    selectedRegions.includes(event.region) &&
+    inSelectedRegions(event) &&
     matchesSelectedGenres(event) &&
     // Keep the open event while its dialog is up, so un-bookmarking it there
     // doesn't pull it out from under the dialog.
@@ -324,7 +325,7 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
     const i = initialIndex();
     setIndex(i);
     pagerRef.current?.scrollTo({ left: pageLeft(i), behavior: "instant" });
-  }, [selectedRegions.join(","), selectedGenres.join(","), bookmarkedOnly]);
+  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), bookmarkedOnly]);
 
   // The pager is clipped to the current page's height so a short day doesn't
   // sit above a screen of blank space left by its taller neighbours.

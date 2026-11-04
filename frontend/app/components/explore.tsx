@@ -13,7 +13,7 @@ import {
   UserIcon,
   XMarkIcon,
 } from "@heroicons/react/24/outline";
-import { REGIONS, regionLabel, type Event } from "~/lib/data";
+import { REGIONS, inRegions, regionLabel, type Event } from "~/lib/data";
 import { GENRES, matchesGenres } from "~/lib/genres";
 import { cn, isFutureEvent, isMultiDay, raveWeekStart } from "~/lib/utils";
 import {
@@ -35,8 +35,8 @@ import { Separator } from "./ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { CheckboxButton, toggled } from "./settings-menu";
 import { SearchChip } from "./search-chip";
-import { ThumbnailCard } from "./thumbnail-card";
-import { EventCard } from "./event-card";
+import { EventThumbnailCard } from "./event-thumbnail-card";
+import { EventLargeCard } from "./event-large-card";
 import { EventListDialog } from "./event-details-card";
 import { EventMap } from "./event-map";
 
@@ -248,7 +248,7 @@ function BrowseSection({ title, children }: { title: string; children: ReactNode
 }
 
 export function Explore({ events }: { events: Event[] }) {
-  const { selectedRegions } = useRegion();
+  const { selectedRegions, excludedSubregions: savedExcludedSubregions } = useRegion();
   const { selectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const { show } = useUrlDialogParam("event");
@@ -269,6 +269,8 @@ export function Explore({ events }: { events: Event[] }) {
   const genresParam = parseList(searchParams.get("genres"), ALL_GENRES);
   const regionsParam = parseList(searchParams.get("regions"), REGIONS);
   const regions = regionsParam ?? selectedRegions;
+  // Unticked subregions only narrow the settings menu's regions, not ones picked here.
+  const excludedSubregions = regionsParam ? [] : savedExcludedSubregions;
   // The ticked genres. A search looks across every genre unless some are
   // picked here, so a default genre doesn't hide the artist someone searched for.
   const genres = genresParam ?? (hasSearch ? [] : selectedGenres);
@@ -295,9 +297,9 @@ export function Explore({ events }: { events: Event[] }) {
   const scope = useMemo(
     () =>
       events
-        .filter((event) => isFutureEvent(event) && regions.includes(event.region))
+        .filter((event) => isFutureEvent(event) && inRegions(event, regions, excludedSubregions))
         .sort((a, b) => moment(a.start_at).diff(moment(b.start_at))),
-    [events, regions.join(",")]
+    [events, regions.join(","), excludedSubregions.join(",")]
   );
   // Everything the filters and chips let through, before the typed text.
   const filtered = useMemo(
@@ -599,13 +601,13 @@ export function Explore({ events }: { events: Event[] }) {
           {viewMode === "list" ? (
             <div className="flex flex-col gap-6">
               {results.map((event) => (
-                <EventCard key={event.id} event={event} />
+                <EventLargeCard key={event.id} event={event} />
               ))}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {results.map((event) => (
-                <ThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
+                <EventThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
               ))}
             </div>
           )}
