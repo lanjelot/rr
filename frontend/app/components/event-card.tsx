@@ -17,7 +17,7 @@ export function EventCard({ event }: { event: Event; }) {
 
   return (
     <>
-      <div className="relative w-full mx-auto flex flex-col gap-3 pt-0 border rounded-xl">
+      <div className="relative w-full mx-auto flex flex-col gap-3 border rounded-xl">
         <div className="w-full relative">
           <img
             src={event.preview}

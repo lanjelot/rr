@@ -72,7 +72,7 @@ function ListFooter({
   return (
     <div className="flex justify-between gap-1">
       <Button variant="ghost" disabled={!canClear} className="text-muted-foreground" onClick={onClear}>
-        <ArrowUturnLeftIcon className="size-4" />
+        <ArrowUturnLeftIcon />
         Clear
       </Button>
       <Button variant="ghost" onClick={onClose}>
@@ -109,7 +109,7 @@ function GenreList({ onClose }: { onClose: () => void }) {
                 aria-expanded={isExpanded}
                 onClick={() => setExpanded(isExpanded ? null : genre)}
               >
-                <InformationCircleIcon className="size-4" />
+                <InformationCircleIcon />
               </Button>
             </div>
             {isExpanded && (
@@ -166,7 +166,7 @@ function ThemeButton() {
       onClick={toggleTheme}
     >
       Theme
-      {isDark ? <SunIcon className="ms-auto size-4" /> : <MoonIcon className="ms-auto size-4" />}
+      {isDark ? <SunIcon className="ms-auto" /> : <MoonIcon className="ms-auto" />}
     </Button>
   );
 }
@@ -184,7 +184,7 @@ function MenuRow({ label, value, onClick }: { label: string; value: string; onCl
     <Button variant="ghost" className="justify-start" onClick={onClick}>
       {label}
       <span className="ms-auto truncate text-muted-foreground font-normal">{value}</span>
-      <ChevronRightIcon className="size-4 text-muted-foreground" />
+      <ChevronRightIcon className="text-muted-foreground" />
     </Button>
   );
 }
@@ -193,7 +193,7 @@ function SubView({ title, onBack, children }: { title: string; onBack: () => voi
   return (
     <div className="flex min-h-0 flex-col gap-1 animate-in fade-in-0 slide-in-from-right-8 duration-200">
       <Button variant="ghost" className="justify-start font-semibold" onClick={onBack}>
-        <ChevronLeftIcon className="size-4" />
+        <ChevronLeftIcon />
         {title}
       </Button>
       <Separator orientation="horizontal" />

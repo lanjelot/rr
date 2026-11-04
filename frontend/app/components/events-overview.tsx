@@ -48,22 +48,34 @@ function weekStart(day: moment.Moment) {
   return day.clone().startOf("day").subtract((day.isoWeekday() + 5) % 7, "days");
 }
 
+// Every week shows at least its Friday to Sunday, even on days with nothing on.
+function weekendDays(weekStart: moment.Moment) {
+  return [3, 4, 5].map(offset => weekStart.clone().add(offset, "days"));
+}
+
 type WeekLabel = { key: string; tag?: "This week" | "Next week"; range: string; };
 
-// Labels each week by the days that actually have events in it, e.g.
-// "13 - 15 Nov" or "30 Oct - 1 Nov". Only shown past next week, where
-// "This week"/"Next week" stop being enough.
+// Labels each week by the days that have events in it, widened to at least
+// Friday to Sunday, e.g. "13 - 15 Nov" or "30 Oct - 2 Nov". Only shown past
+// next week, where "This week"/"Next week" stop being enough.
 function weekLabeller(groups: { day: string; }[]) {
   const ranges = new Map<string, { first: moment.Moment; last: moment.Moment; }>();
   for (const group of groups) {
     const day = moment(group.day, DAY_FMT);
-    const key = weekStart(day).format(DAY_FMT);
-    const range = ranges.get(key);
-    if (!range) ranges.set(key, { first: day, last: day });
-    else range.last = day;
+    const start = weekStart(day);
+    const key = start.format(DAY_FMT);
+    if (!ranges.has(key)) {
+      const [friday, , sunday] = weekendDays(start);
+      ranges.set(key, { first: friday, last: sunday });
+    }
+    const range = ranges.get(key)!;
+    if (day.isBefore(range.first)) range.first = day;
+    if (day.isAfter(range.last)) range.last = day;
   }
 
-  const thisWeek = weekStart(moment());
+  // By Monday the weekend's over, so "This week" is already the one starting
+  // tomorrow rather than the one ending today.
+  const thisWeek = weekStart(moment().add(1, "day"));
 
   return (day: string): WeekLabel => {
     const start = weekStart(moment(day, DAY_FMT));
@@ -102,13 +114,24 @@ function DayStrip({
     strip.scrollTo({ left, behavior: "smooth" });
   }, [index]);
 
-  // Chips grouped into weeks, keeping each day's index into `groups`.
-  const weeks: { label: WeekLabel; days: { group: typeof groups[number]; i: number; }[]; }[] = [];
+  // Chips grouped into weeks, keeping each day's index into `groups`. Any of
+  // the week's Friday to Sunday still to come with nothing on gets a disabled
+  // chip with no index.
+  type Chip = { day: string; events: number; i?: number; };
+  const weeks: { label: WeekLabel; days: Chip[]; }[] = [];
   groups.forEach((group, i) => {
     const label = weekLabel(group.day);
     if (weeks[weeks.length - 1]?.label.key !== label.key) weeks.push({ label, days: [] });
-    weeks[weeks.length - 1].days.push({ group, i });
+    weeks[weeks.length - 1].days.push({ day: group.day, events: group.events.length, i });
   });
+  const today = moment().format(DAY_FMT);
+  for (const week of weeks) {
+    for (const weekend of weekendDays(moment(week.label.key, DAY_FMT))) {
+      const day = weekend.format(DAY_FMT);
+      if (day >= today && !week.days.some(chip => chip.day === day)) week.days.push({ day, events: 0 });
+    }
+    week.days.sort((a, b) => a.day.localeCompare(b.day));
+  }
 
   return (
     <div ref={stripRef} className="relative flex overflow-x-auto no-scrollbar">
@@ -127,21 +150,25 @@ function DayStrip({
             {week.label.tag ?? week.label.range}
           </div>
           <div className="flex gap-1.5">
-            {week.days.map(({ group, i }) => {
-              const day = moment(group.day, DAY_FMT);
+            {week.days.map(chip => {
+              const day = moment(chip.day, DAY_FMT);
+              const i = chip.i;
               return (
                 <button
-                  key={group.day}
-                  ref={el => { chipRefs.current[i] = el; }}
+                  key={chip.day}
+                  ref={el => { if (i !== undefined) chipRefs.current[i] = el; }}
                   type="button"
-                  onClick={() => onSelect(i)}
+                  disabled={i === undefined}
+                  onClick={() => i !== undefined && onSelect(i)}
                   aria-current={i === index ? "date" : undefined}
-                  aria-label={`${day.format("dddd D MMMM")}, ${week.label.tag ?? week.label.range}, ${group.events.length} events`}
+                  aria-label={`${day.format("dddd D MMMM")}, ${week.label.tag ?? week.label.range}, ${chip.events} events`}
                   className={cn(
                     "flex-none w-12 py-1 rounded-lg flex flex-col items-center leading-tight transition-colors",
-                    i === index
-                      ? "bg-foreground text-background"
-                      : "bg-zinc-100 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10",
+                    i === undefined
+                      ? "bg-zinc-100 opacity-40 dark:bg-white/5"
+                      : i === index
+                        ? "bg-foreground text-background"
+                        : "bg-zinc-100 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10",
                   )}
                 >
                   <span className="text-sm">{day.format("ddd")}</span>

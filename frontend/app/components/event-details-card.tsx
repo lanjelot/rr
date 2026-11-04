@@ -251,7 +251,7 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
           whether or not the details are long enough to scroll. */}
       <div className="shrink-0 flex items-center gap-5 px-4 pb-4 text-muted-foreground">
         {event.ticket && (
-          <Button asChild className="flex-1">
+          <Button asChild variant="blue" className="flex-1">
             <a href={event.ticket} target="_blank" rel="noopener noreferrer">
               Get Tickets
               <ArrowTopRightOnSquareIcon />

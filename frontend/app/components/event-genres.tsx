@@ -1,4 +1,4 @@
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ArrowTurnDownRightIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import type { Event } from "~/lib/data";
 import { normalize } from "~/lib/search";
@@ -33,7 +33,7 @@ export function EventGenres({ event }: { event: Event }) {
       >
         <ChevronDownIcon className={cn("size-4 transition-transform", expanded && "rotate-180")} />
       </button>
-      {expanded && <div className="ps-6 text-xs">{raw}</div>}
+      {expanded && <div className="ps-1 text-xs flex items-start gap-1"><ArrowTurnDownRightIcon className="size-4 shrink-0"/><span className="font-mono">{raw}</span></div>}
     </li>
   );
 }

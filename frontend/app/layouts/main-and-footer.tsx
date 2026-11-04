@@ -52,7 +52,7 @@ export default function Component(_: Route.ComponentProps) {
                 <Outlet />
               </main>
 
-              <footer className="fixed bottom-0 left-0 right-0 backdrop-blur-md bg-zinc-100/80 border-t border-black/10 dark:bg-zinc-900/80 dark:border-t dark:border-white/10">
+              <footer className="fixed bottom-0 left-0 right-0 backdrop-blur-md bg-zinc-100/80 border-t border-black/10 dark:bg-zinc-900/80 dark:border-white/10">
                 <div className="max-w-3xl mx-auto flex gap-3 justify-evenly">
                   <FooterNavLink
                     to="/"

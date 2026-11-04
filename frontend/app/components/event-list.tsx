@@ -93,7 +93,7 @@ export function EventList({ events }: { events: Event[]; }) {
               aria-label="Bookmarked only"
               title="Bookmarked only"
             >
-              {bookmarkedOnly ? <BookmarkSolidIcon className="size-4" /> : <BookmarkIcon className="size-4" />}
+              {bookmarkedOnly ? <BookmarkSolidIcon /> : <BookmarkIcon />}
             </Toggle>
             <ToggleGroup
               type="single"
@@ -102,10 +102,10 @@ export function EventList({ events }: { events: Event[]; }) {
               onValueChange={(value) => value && setViewMode(value as ViewMode)}
             >
               <ToggleGroupItem value="thumbnail" aria-label="Thumbnail view">
-                <Squares2X2Icon className="size-4" />
+                <Squares2X2Icon />
               </ToggleGroupItem>
               <ToggleGroupItem value="detailed" aria-label="Detailed view">
-                <ListBulletIcon className="size-4" />
+                <ListBulletIcon />
               </ToggleGroupItem>
             </ToggleGroup>
           </div>

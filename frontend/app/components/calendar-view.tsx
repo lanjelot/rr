@@ -139,6 +139,7 @@ function itemDialogId({ event, day }: { event: Event; day: string }): string {
 
 function EventBar({ item, onClick }: { item: DayItem; onClick: () => void }) {
   const { event, startMin, endMin } = item;
+  const { isBookmarked } = useBookmarks();
   const leftPct = (startMin / WINDOW_MINUTES) * 100;
   const widthPct = ((endMin - startMin) / WINDOW_MINUTES) * 100;
 
@@ -146,7 +147,7 @@ function EventBar({ item, onClick }: { item: DayItem; onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 min-w-0 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
+      className="absolute inset-y-0 flex items-center gap-1.5 rounded-lg pl-1 pr-2 bg-white hover:bg-zinc-200 dark:bg-white/10 dark:hover:bg-white/20 overflow-hidden transition-colors text-left"
       style={{
         left: `${leftPct}%`,
         width: `${widthPct}%`,
@@ -164,6 +165,9 @@ function EventBar({ item, onClick }: { item: DayItem; onClick: () => void }) {
         {/* <span className="text-[11px] text-muted-foreground truncate">{eventTime(event)}</span> */}
         <span className="text-xs text-muted-foreground truncate">{event.location}</span>
       </div>
+      {isBookmarked(event.id) && (
+        <BookmarkSolidIcon className="absolute bottom-1 right-1 size-3 text-muted-foreground" />
+      )}
     </button>
   );
 }
@@ -394,7 +398,7 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
   }
 
   return (
-    <Button variant="secondary" size="sm" onClick={share} className="flex-none ml-auto">
+    <Button variant="outline" size="sm" onClick={share} className="ml-auto">
       {shareState === "idle"
         ? <Share2Icon />
         : shareState === "copied"
@@ -456,7 +460,7 @@ export function CalendarView({ events }: { events: Event[]; }) {
       title="Bookmarked only"
       className="flex-none rounded-full"
     >
-      {bookmarkedOnly ? <BookmarkSolidIcon className="size-4" /> : <BookmarkIcon className="size-4" />}
+      {bookmarkedOnly ? <BookmarkSolidIcon /> : <BookmarkIcon />}
     </Toggle>
   );
 

@@ -44,7 +44,7 @@ export function RegionSelection({
               }}
             >
               {regionLabel(region)}
-              {isSelected && <CheckIcon className="ms-auto size-4" />}
+              {isSelected && <CheckIcon className="ms-auto" />}
             </Button>
           );
         })}

@@ -1,5 +1,6 @@
 import { FunnelIcon, PlusIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
+import { Button } from "~/components/ui/button";
 import { SEARCH_LABELS, type SearchParam } from "~/lib/search";
 
 const CHIP_CLASS = "inline-flex h-8 max-w-full items-center gap-1 rounded-lg bg-secondary text-secondary-foreground text-sm font-medium";
@@ -67,12 +68,8 @@ export function SearchChip({
 // Funnel when no filters are set yet, "+" once there are some to add to.
 export function AddSearchChip({ hasFilters, onClick }: { hasFilters: boolean; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className={`${CHIP_CLASS} px-2 cursor-pointer hover:bg-secondary/80`}
-      aria-label="Add search filter"
-    >
-      {hasFilters ? <PlusIcon className="size-4" /> : <FunnelIcon className="size-4" />}
-    </button>
+    <Button variant="outline" size="icon" onClick={onClick} aria-label="Add search filter">
+      {hasFilters ? <PlusIcon /> : <FunnelIcon />}
+    </Button>
   );
 }

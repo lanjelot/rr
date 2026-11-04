@@ -334,9 +334,9 @@ function EventMarkerCard({ event }: { event: Event; }) {
     <EventDialog event={event} dialogId={`map-${event.id}`}>
       <button
         type="button"
-        className="w-full flex items-center text-start gap-2 w-40"
+        className="flex items-center text-start gap-2 w-40"
       >
-        <img src={event.preview} alt="" className="object-cover aspect-square w-10 h-10 rounded shrink-0" />
+        <img src={event.preview} alt="" className="object-cover size-10 rounded shrink-0" />
         <div className="flex flex-col leading-tight overflow-hidden">
           <div className="font-semibold truncate">{event.name}</div>
           <div className="text-xs truncate">{event.location}</div>

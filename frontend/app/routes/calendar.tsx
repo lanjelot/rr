@@ -53,10 +53,10 @@ export default function Calendar({
           onValueChange={(value) => value && setViewMode(value as ViewMode)}
         >
           <ToggleGroupItem value="tabs" aria-label="Tabs view">
-            <CalendarIcon className="size-4" />
+            <CalendarIcon />
           </ToggleGroupItem>
           <ToggleGroupItem value="google" aria-label="Google view">
-            <img src="/raveroster/google-calendar.svg" alt="Google" className="size-4" />
+            <img src="/raveroster/google-calendar.svg" alt="Google" />
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
