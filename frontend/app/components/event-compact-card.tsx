@@ -20,7 +20,7 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
             loading="lazy"
             className="flex-none size-20 object-cover rounded-sm self-center"
           />
-          <div className="grow flex flex-col justify-between gap-1">
+          <div className="grow min-w-0 flex flex-col justify-between gap-1">
             {/* pe-6 keeps the name clear of the bookmark button overlaid in the corner */}
             <div className="flex flex-row gap-1 pe-6 text-base leading-tight font-medium">
               <span>✧</span>
@@ -29,7 +29,7 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
             <ul className="text-muted-foreground text-sm">
               <li className="line-clamp-1">🎧 {lineup && lineup || "..."}</li>
               <li>⏰ {eventTime(event)}</li>
-              <li>📍 {(event.location === event.zone && event.venue) || event.location}, {event.zone}</li>
+              <li className="truncate">📍 {(event.location === event.zone && event.venue) || event.location}, {event.zone}</li>
             </ul>
           </div>
         </div>

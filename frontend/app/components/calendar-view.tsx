@@ -12,7 +12,7 @@ import { matchesGenres } from "~/lib/genres";
 import { Button } from "~/components/ui/button";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
-import { eventDayNumberer } from "./event-badges";
+import { eventDayNumberer, isClosingDay } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { DayStripBar, weekLabeller } from "./events-overview";
 
@@ -359,10 +359,14 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     [allDayGroups]
   );
   // From the start of this week: a festival that's been running for weeks
-  // would otherwise reach the strip back to its first day.
+  // would otherwise reach the strip back to its first day. A day with nothing
+  // on but festivals winding up isn't worth a card.
   const dayGroups = useMemo(
-    () => allDayGroups.filter((group) => group.day >= weekKey(today)),
-    [allDayGroups, today]
+    () => allDayGroups.filter((group) =>
+      group.day >= weekKey(today) &&
+      !group.items.every((item) => isClosingDay(eventDay(item.event, item.day)))
+    ),
+    [allDayGroups, eventDay, today]
   );
   // The same day strip as the list view, over the calendar's show days.
   const stripGroups = useMemo(

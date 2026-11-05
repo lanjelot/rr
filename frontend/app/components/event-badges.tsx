@@ -6,7 +6,7 @@ import { eventDate, formatDate } from "~/lib/utils";
 export type EventDay = { day: string; n: number; total: number };
 
 // Numbers each event's days from every (event, day) entry a view lists, so
-// "Day n/N" counts the days as that view splits them.
+// "Day n" counts the days as that view splits them.
 export function eventDayNumberer(entries: { event: Event; day: string }[]) {
   const days = new Map<number, string[]>();
   for (const { event, day } of entries) {
@@ -22,13 +22,19 @@ export function eventDayNumberer(entries: { event: Event; day: string }[]) {
   };
 }
 
+// The last of several days, where the event is only winding up, e.g. a
+// festival's Monday.
+export function isClosingDay({ n, total }: EventDay) {
+  return total > 1 && n === total;
+}
+
 // The event's dates, or for one day of a multi-day event that day and which it
-// is, e.g. "Sun 8 Nov - Day 2/2".
+// is, e.g. "Sun 8 Nov - Day 2".
 export function DateBadge({ event, eventDay }: { event: Event; eventDay?: EventDay }) {
   return (
     <div className="rounded-md bg-green-50 text-black px-2 py-1 text-sm font-medium">
       {eventDay && eventDay.total > 1
-        ? `${formatDate(eventDay.day)} - Day ${eventDay.n}/${eventDay.total}`
+        ? `${formatDate(eventDay.day)} - Day ${eventDay.n}`
         : eventDate(event)}
     </div>
   );

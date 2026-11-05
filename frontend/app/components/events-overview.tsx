@@ -3,7 +3,7 @@ import type { Event } from "~/lib/data";
 import { cn, isMultiDay, raveWeekStart as weekStart } from "~/lib/utils";
 import { EventCompactCard } from "./event-compact-card";
 import { EventListDialog } from "./event-details-card";
-import { eventDayNumberer } from "./event-badges";
+import { eventDayNumberer, isClosingDay } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { useRegion } from "~/contexts/region-context";
 import { useGenres } from "~/contexts/genre-context";
@@ -238,7 +238,7 @@ function parseDialogId(value: string | null) {
   return match ? { id: match[1], day: match[2] } : null;
 }
 
-function DayPage({ day, events, week, render }: { day: string; events: Event[]; week: WeekLabel; render: boolean; }) {
+function DayPage({ day, events, render }: { day: string; events: Event[]; render: boolean; }) {
   const { show } = useUrlDialogParam("event");
 
   return (
@@ -268,14 +268,17 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
     (!bookmarkedOnly || isBookmarked(event.id) || parseDialogId(openEvent)?.id === String(event.id))
   );
   const allGroups = groupEventsByDay(regionEvents);
-  const weekLabel = weekLabeller(allGroups);
+  // Numbered over past days too, so a festival that started yesterday is on
+  // day 2, and over the days dropped below, so it still reads "Day 2/3".
+  const eventDay = eventDayNumberer(allGroups.flatMap(group => group.events.map(event => ({ event, day: group.day }))));
+  // A day with nothing on but festivals winding up isn't worth a page.
+  const shownGroups = allGroups.filter(group => !group.events.every(event => isClosingDay(eventDay(event, group.day))));
+  const weekLabel = weekLabeller(shownGroups);
   const today = moment().format(DAY_FMT);
-  const groups = allGroups.filter(group => group.day >= today);
+  const groups = shownGroups.filter(group => group.day >= today);
 
   // Every upcoming day's events in order, for the dialog to step through.
   const dialogEntries = groups.flatMap(group => group.events.map(event => ({ event, day: group.day })));
-  // Numbered over past days too, so a festival that started yesterday is on day 2.
-  const eventDay = eventDayNumberer(allGroups.flatMap(group => group.events.map(event => ({ event, day: group.day }))));
 
   // Start on the open event's day, else the day in the URL, else the day of a
   // plain ?event=<id> link, else the first upcoming day.
@@ -433,7 +436,7 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
             aria-hidden={i !== current}
             inert={i !== current}
           >
-            <DayPage day={group.day} events={group.events} week={weekLabel(group.day)} render={Math.abs(i - current) <= 1} />
+            <DayPage day={group.day} events={group.events} render={Math.abs(i - current) <= 1} />
           </div>
         ))}
       </div>
