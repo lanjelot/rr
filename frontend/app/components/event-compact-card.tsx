@@ -13,7 +13,7 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
   return (
     <div className="relative">
       <button type="button" onClick={onClick} className="w-full text-left">
-        <div className="w-full min-h-24 mx-auto p-3 rounded-xl bg-zinc-100 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer flex flex-row gap-2 transition-colors">
+        <div className="w-full min-h-24 mx-auto p-3 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer flex flex-row gap-2 transition-colors">
           <img
             src={event.preview}
             alt=""

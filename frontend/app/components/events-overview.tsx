@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { Event } from "~/lib/data";
 import { cn, isMultiDay, raveWeekStart as weekStart } from "~/lib/utils";
 import { EventCompactCard } from "./event-compact-card";
+import { EventThumbnailCard } from "./event-thumbnail-card";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer, isClosingDay } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
@@ -238,7 +239,9 @@ function parseDialogId(value: string | null) {
   return match ? { id: match[1], day: match[2] } : null;
 }
 
-function DayPage({ day, events, render }: { day: string; events: Event[]; render: boolean; }) {
+export type OverviewLayout = "list" | "grid";
+
+function DayPage({ day, events, render, layout }: { day: string; events: Event[]; render: boolean; layout: OverviewLayout; }) {
   const { show } = useUrlDialogParam("event");
 
   return (
@@ -246,14 +249,28 @@ function DayPage({ day, events, render }: { day: string; events: Event[]; render
       <div className="text-muted-foreground font-semibold text-base ms-3">
         {moment(day, DAY_FMT).format("dddd D MMMM")}
       </div>
-      {render && events.map((event: Event) => (
+      {render && (layout === "grid" ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {events.map((event: Event) => (
+            <EventThumbnailCard key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
+          ))}
+        </div>
+      ) : events.map((event: Event) => (
         <EventCompactCard key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
-      ))}
+      )))}
     </div>
   );
 }
 
-export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
+export function EventsOverview({
+  events,
+  bookmarkedOnly,
+  layout = "list",
+}: {
+  events: Event[];
+  bookmarkedOnly: boolean;
+  layout?: OverviewLayout;
+}) {
   const { selectedRegions, excludedSubregions, inSelectedRegions } = useRegion();
   const { selectedGenres, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -436,7 +453,7 @@ export function EventsOverview({ events, bookmarkedOnly }: { events: Event[]; bo
             aria-hidden={i !== current}
             inert={i !== current}
           >
-            <DayPage day={group.day} events={group.events} render={Math.abs(i - current) <= 1} />
+            <DayPage day={group.day} events={group.events} render={Math.abs(i - current) <= 1} layout={layout} />
           </div>
         ))}
       </div>

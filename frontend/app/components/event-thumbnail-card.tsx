@@ -20,7 +20,7 @@ export function EventThumbnailCard({ event, onClick }: { event: Event; onClick: 
       <button
         type="button"
         onClick={onClick}
-        className="w-full h-48 flex flex-col gap-2 bg-zinc-200 hover:bg-zinc-300 dark:bg-white/5 dark:hover:bg-white/10 border rounded-xl overflow-hidden cursor-pointer text-left"
+        className="w-full h-48 flex flex-col gap-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer rounded-xl overflow-hidden cursor-pointer text-left"
       >
         <img
           src={event.preview}

@@ -7,7 +7,7 @@ import { CalendarView } from "~/components/calendar-view";
 import { Button } from "~/components/ui/button";
 import { Toggle } from "~/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { BookmarkIcon, CalendarDaysIcon, ListBulletIcon } from "@heroicons/react/24/outline";
+import { BookmarkIcon, CalendarIcon, ListBulletIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// Both views keep their day and open event in the URL; only refetch when
+// All views keep their day and open event in the URL; only refetch when
 // actually navigating to the page.
 export function shouldRevalidate({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
   if (currentUrl.pathname === nextUrl.pathname) return false;
@@ -34,21 +34,25 @@ export async function clientLoader({
   return { events };
 }
 
-type ViewMode = "days" | "calendar";
+type ViewMode = "days" | "grid" | "calendar";
+
+function parseViewMode(value: string | null): ViewMode {
+  return value === "grid" || value === "calendar" ? value : "days";
+}
 
 export default function Home({
   loaderData,
 }: Route.ComponentProps) {
   const { events } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
-  const viewMode: ViewMode = searchParams.get("view") === "calendar" ? "calendar" : "days";
+  const viewMode: ViewMode = parseViewMode(searchParams.get("view"));
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
 
-  // Both views share ?day=, so switching opens on the same day.
+  // All views share ?day=, so switching opens on the same day.
   function setViewMode(mode: ViewMode) {
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
-      if (mode === "calendar") params.set("view", mode);
+      if (mode !== "days") params.set("view", mode);
       else params.delete("view");
       params.delete("event");
       return params;
@@ -82,18 +86,21 @@ export default function Home({
           value={viewMode}
           onValueChange={(value) => value && setViewMode(value as ViewMode)}
         >
-          <ToggleGroupItem value="days" aria-label="Day by day" title="Day by day">
+          <ToggleGroupItem value="days" aria-label="Compact" title="Compact">
             <ListBulletIcon />
           </ToggleGroupItem>
+          <ToggleGroupItem value="grid" aria-label="Grid" title="Grid">
+            <Squares2X2Icon />
+          </ToggleGroupItem>
           <ToggleGroupItem value="calendar" aria-label="Calendar" title="Calendar">
-            <CalendarDaysIcon />
+            <CalendarIcon />
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
       {viewMode === "calendar"
         ? <CalendarView events={events} bookmarkedOnly={bookmarkedOnly} />
-        : <EventsOverview events={events} bookmarkedOnly={bookmarkedOnly} />}
+        : <EventsOverview events={events} bookmarkedOnly={bookmarkedOnly} layout={viewMode === "grid" ? "grid" : "list"} />}
     </div>
   );
 }
