@@ -183,19 +183,6 @@ function weekKey(day: string): string {
   return d.clone().subtract(daysSinceTuesday, "days").format("YYYY-MM-DD");
 }
 
-// Whether the event falls in the current Tue-Tue week (using the same show-day cutoff),
-// so e.g. last Monday's events, which belong to the previous week, are excluded.
-// 10am cutoff: "today" is shifted by the same 10am cutoff the rest of the calendar uses.
-// For example, at 5am on a Tuesday the current week is still the previous one, which
-// matches how the strip and the "Today" tag behave.
-function isThisShowWeek(event: Event): boolean {
-  const today = moment()
-    .utcOffset(moment.parseZone(event.start_at).utcOffset())
-    .subtract(WINDOW_START_HOUR, "hours")
-    .format("YYYY-MM-DD");
-  return weekKey(showDay(event.start_at)) === weekKey(today);
-}
-
 // Anchor id for a day card, so the strip can scroll straight to it.
 function dayCardId(day: string): string {
   return `day-${day}`;
@@ -340,7 +327,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
         .filter((event) =>
           inSelectedRegions(event) &&
           matchesGenres(event, selectedGenres) &&
-          (isThisShowWeek(event) || isFutureEvent(event)) &&
+          isFutureEvent(event) &&
           // Keep the open event while its dialog is up, so un-bookmarking it there
           // doesn't pull it out from under the dialog.
           (!bookmarkedOnly || isBookmarked(event.id) || openDialogId?.startsWith(`${event.id}-`))
@@ -358,12 +345,12 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     () => eventDayNumberer(allDayGroups.flatMap((group) => group.items)),
     [allDayGroups]
   );
-  // From the start of this week: a festival that's been running for weeks
-  // would otherwise reach the strip back to its first day. A day with nothing
-  // on but festivals winding up isn't worth a card.
+  // From today on, as in the list view: past days, and the earlier days of a
+  // festival still running, are dropped. A day with nothing on but festivals
+  // winding up isn't worth a card.
   const dayGroups = useMemo(
     () => allDayGroups.filter((group) =>
-      group.day >= weekKey(today) &&
+      group.day >= today &&
       !group.items.every((item) => isClosingDay(eventDay(item.event, item.day)))
     ),
     [allDayGroups, eventDay, today]
