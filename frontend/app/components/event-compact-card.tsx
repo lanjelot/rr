@@ -29,7 +29,12 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
             <ul className="text-muted-foreground text-sm">
               <li className="line-clamp-1">🎧 {lineup && lineup || "..."}</li>
               <li>⏰ {eventTime(event)}</li>
-              <li className="truncate">📍 {(event.location === event.zone && event.venue) || event.location}, {event.zone}</li>
+              <li className="truncate">📍 {event.venue === event.location
+                ? `${event.venue}, ${event.zone}`
+                : event.zone !== event.location
+                  ? `${event.location}, ${event.zone}`
+                  : event.zone}
+              </li>
             </ul>
           </div>
         </div>
