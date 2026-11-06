@@ -336,8 +336,10 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     [events, selectedRegions, excludedSubregions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
-  // Use the same 10am cutoff so "Today" still tags last night's show in the early hours.
+  // Use the same 10am cutoff so last night's show still shows in the early hours.
   const today = moment().subtract(WINDOW_START_HOUR, "hours").format("YYYY-MM-DD");
+  // The "Today" badge goes on the browser's local calendar date, no cutoff.
+  const localToday = moment().format("YYYY-MM-DD");
 
   const allDayGroups = useMemo(() => buildDayGroups(filteredEvents), [filteredEvents]);
   // Numbered across every day, so a festival that started weeks ago counts on.
@@ -448,7 +450,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
           <DayCard
             key={group.day}
             group={group}
-            today={today}
+            today={localToday}
             regions={selectedRegions}
             onOpen={(item) => show(itemDialogId(item))}
           />
