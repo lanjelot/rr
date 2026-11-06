@@ -1,4 +1,4 @@
-import { MapPinIcon } from "@heroicons/react/24/outline";
+import { AdjustmentsHorizontalIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { ZONES } from "~/lib/data";
@@ -187,7 +187,7 @@ export function RegionOnboarding({ onSubmit }: { onSubmit: (regions: string[]) =
       </Button>
 
       <p className="text-xs text-muted-foreground flex items-center gap-1">
-        You can change this later with the <MapPinIcon className="size-4" /> button.
+        You can change this later in settings <AdjustmentsHorizontalIcon className="size-4" />.
       </p>
     </div>
   );
