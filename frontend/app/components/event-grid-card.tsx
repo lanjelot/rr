@@ -1,12 +1,7 @@
 import type { Event } from "~/lib/data";
 import { eventPlace, eventTime } from "~/lib/utils";
 import { BookmarkButton } from "./bookmark-button";
-
-// The parent genres, else the flyer's genres for events without any.
-function genreChips(event: Event): string[] {
-  if (event.canonical_genres?.length) return event.canonical_genres;
-  return (event.genre ?? "").split(",").map(genre => genre.trim()).filter(Boolean);
-}
+import { genreChips } from "~/lib/genres";
 
 // The overview's grid card: the day is already the page's heading, so it leads
 // with the time, and ends with the event's genres as chips. Opening the details

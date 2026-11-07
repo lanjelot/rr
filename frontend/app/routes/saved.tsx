@@ -1,5 +1,6 @@
 import type { ShouldRevalidateFunctionArgs } from "react-router";
-import { BookmarkIcon } from "@heroicons/react/24/outline";
+import { useSearchParams } from "react-router";
+import { BookmarkIcon, ListBulletIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import moment from "moment";
 import type { Route } from "./+types/saved";
 import { fetchEvents, type Event } from "~/lib/data";
@@ -7,6 +8,8 @@ import { isFutureEvent } from "~/lib/utils";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { EventCompactCard } from "~/components/event-compact-card";
+import { EventGridCard } from "~/components/event-grid-card";
+import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
 import { EventListDialog } from "~/components/event-details-card";
 
 export function meta({}: Route.MetaArgs) {
@@ -40,6 +43,12 @@ function groupByDay(events: Event[]) {
   return [...byDay.entries()].map(([day, events]) => ({ day, events }));
 }
 
+type ViewMode = "list" | "grid";
+
+function parseViewMode(value: string | null): ViewMode {
+  return value === "grid" ? value : "list";
+}
+
 // Bookmarks are your own picks, so they ignore the region and genre filters.
 export default function Saved({
   loaderData,
@@ -47,6 +56,17 @@ export default function Saved({
   const { events } = loaderData;
   const { isBookmarked } = useBookmarks();
   const { value: openEventId, show } = useUrlDialogParam("event");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewMode = parseViewMode(searchParams.get("view"));
+
+  function setViewMode(mode: ViewMode) {
+    setSearchParams((prev) => {
+      const params = new URLSearchParams(prev);
+      if (mode !== "list") params.set("view", mode);
+      else params.delete("view");
+      return params;
+    }, { replace: true, preventScrollReset: true });
+  }
 
   const saved = events
     .filter((event) =>
@@ -69,14 +89,36 @@ export default function Saved({
 
   return (
     <div className="flex flex-col gap-4">
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        className="self-end"
+        value={viewMode}
+        onValueChange={(value) => value && setViewMode(value as ViewMode)}
+      >
+        <ToggleGroupItem value="list" aria-label="List view" title="List">
+          <ListBulletIcon />
+        </ToggleGroupItem>
+        <ToggleGroupItem value="grid" aria-label="Grid view" title="Grid">
+          <Squares2X2Icon />
+        </ToggleGroupItem>
+      </ToggleGroup>
       {groupByDay(saved).map(({ day, events }) => (
         <div key={day} className="flex flex-col gap-1">
           <div className="text-muted-foreground font-semibold text-base ms-3">
             {moment(day, "YYYY-MM-DD").format("dddd D MMMM")}
           </div>
-          {events.map((event) => (
-            <EventCompactCard key={event.id} event={event} onClick={() => show(event.id)} />
-          ))}
+          {viewMode === "grid" ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {events.map((event) => (
+                <EventGridCard key={event.id} event={event} onClick={() => show(event.id)} />
+              ))}
+            </div>
+          ) : (
+            events.map((event) => (
+              <EventCompactCard key={event.id} event={event} onClick={() => show(event.id)} />
+            ))
+          )}
         </div>
       ))}
       <EventListDialog events={saved} />

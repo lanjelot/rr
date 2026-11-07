@@ -23,3 +23,9 @@ export const GENRE_NAMES = GENRES.map(({ genre }) => genre);
 export function matchesGenres(event: Event, selectedGenres: string[]): boolean {
   return selectedGenres.length === 0 || (event.canonical_genres ?? []).some((g) => selectedGenres.includes(g));
 }
+
+// The parent genres, else the flyer's genres for events without any.
+export function genreChips(event: Event): string[] {
+  if (event.canonical_genres?.length) return event.canonical_genres;
+  return (event.genre ?? "").split(",").map(genre => genre.trim()).filter(Boolean);
+}
