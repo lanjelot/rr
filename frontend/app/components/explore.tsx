@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useSearchParams } from "react-router";
 import moment from "moment";
 import {
+  Bars2Icon,
   ChevronDownIcon,
-  ListBulletIcon,
   MagnifyingGlassIcon,
   MapIcon,
   MapPinIcon,
@@ -536,7 +536,7 @@ export function Explore({ events }: { events: Event[] }) {
             <Squares2X2Icon />
           </ToggleGroupItem>
           <ToggleGroupItem value="list" aria-label="List view" title="List">
-            <ListBulletIcon />
+            <Bars2Icon />
           </ToggleGroupItem>
           <ToggleGroupItem value="map" aria-label="Map view" title="Map">
             <MapIcon />
