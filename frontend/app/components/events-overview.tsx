@@ -325,6 +325,9 @@ export function EventsOverview({
   const pagerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [height, setHeight] = useState<number>();
+  // Where the pager starts on the page, so a short day can still stretch it to
+  // the bottom of the screen and swipes work over the blank space too.
+  const [pagerTop, setPagerTop] = useState(0);
 
   const pageLeft = (i: number) => (pageRefs.current[i]?.offsetLeft ?? 0) - (pageRefs.current[0]?.offsetLeft ?? 0);
 
@@ -356,6 +359,16 @@ export function EventsOverview({
     observer.observe(page);
     return () => observer.disconnect();
   }, [current, groups.length]);
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const pager = pagerRef.current;
+      if (pager) setPagerTop(pager.getBoundingClientRect().top + window.scrollY);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [groups.length > 0]);
 
   // On a new day, bring its top back into view if we'd scrolled down a long one.
   useEffect(() => {
@@ -442,7 +455,8 @@ export function EventsOverview({
         onScroll={onScroll}
         // A swipe that interrupts a click's smooth scroll takes over again.
         onPointerDown={() => { scrollTarget.current = null; }}
-        style={{ height }}
+        // 5rem clears main's bottom padding under the fixed footer.
+        style={{ height, minHeight: `calc(100vh - ${pagerTop}px - 5rem)` }}
         className="relative flex items-start gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory no-scrollbar overscroll-x-contain"
       >
         {groups.map((group, i) => (

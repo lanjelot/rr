@@ -181,12 +181,12 @@ function FilterButton({
 }
 
 // Resetting goes back to the settings menu's defaults; "All" widens past them.
-function ListFooter({ onDefaults, onAll, onClose }: { onDefaults?: () => void; onAll: () => void; onClose: () => void }) {
+function ListFooter({ onDefaults, onAll, onClose }: { onDefaults?: () => void; onAll?: () => void; onClose: () => void }) {
   return (
     <>
       <Separator orientation="horizontal" />
       <div className="flex gap-1">
-        <Button variant="ghost" size="sm" onClick={onAll}>All</Button>
+        {onAll && <Button variant="ghost" size="sm" onClick={onAll}>All</Button>}
         {onDefaults && (
           <Button variant="ghost" size="sm" className="text-muted-foreground" onClick={onDefaults}>
             My defaults
@@ -248,7 +248,7 @@ function BrowseSection({ title, children }: { title: string; children: ReactNode
 }
 
 export function Explore({ events }: { events: Event[] }) {
-  const { selectedRegions, excludedSubregions: savedExcludedSubregions } = useRegion();
+  const { selectedRegions } = useRegion();
   const { selectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const { show } = useUrlDialogParam("event");
@@ -268,9 +268,9 @@ export function Explore({ events }: { events: Event[] }) {
 
   const genresParam = parseList(searchParams.get("genres"), ALL_GENRES);
   const regionsParam = parseList(searchParams.get("regions"), REGIONS);
+  // Regions are searched whole: the dropdown only shows regions, so subregions
+  // unticked in the settings menu would silently hide events in the rest.
   const regions = regionsParam ?? selectedRegions;
-  // Unticked subregions only narrow the settings menu's regions, not ones picked here.
-  const excludedSubregions = regionsParam ? [] : savedExcludedSubregions;
   // The ticked genres. A search looks across every genre unless some are
   // picked here, so a default genre doesn't hide the artist someone searched for.
   const genres = genresParam ?? (hasSearch ? [] : selectedGenres);
@@ -297,9 +297,9 @@ export function Explore({ events }: { events: Event[] }) {
   const scope = useMemo(
     () =>
       events
-        .filter((event) => isFutureEvent(event) && inRegions(event, regions, excludedSubregions))
+        .filter((event) => isFutureEvent(event) && inRegions(event, regions))
         .sort((a, b) => moment(a.start_at).diff(moment(b.start_at))),
-    [events, regions.join(","), excludedSubregions.join(",")]
+    [events, regions.join(",")]
   );
   // Everything the filters and chips let through, before the typed text.
   const filtered = useMemo(
@@ -492,7 +492,6 @@ export function Explore({ events }: { events: Event[] }) {
                     </CheckboxButton>
                   ))}
                   <ListFooter
-                    onAll={() => update((params) => params.set("genres", "all"))}
                     onDefaults={genresParam ? () => update((params) => params.delete("genres")) : undefined}
                     onClose={close}
                   />
