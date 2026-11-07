@@ -94,3 +94,11 @@ export function eventTime(
 export function eventLineup(event: Event): string {
   return [event.artists, event.djs].filter(Boolean).join(", ");
 }
+
+// Where an event is, e.g. "Fortitude Valley, Brisbane", without repeating the
+// zone when the venue or location already is it.
+export function eventPlace(event: Event): string {
+  if (event.venue === event.location) return `${event.venue}, ${event.zone}`;
+  if (event.zone !== event.location) return `${event.location}, ${event.zone}`;
+  return event.zone;
+}

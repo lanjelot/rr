@@ -1,5 +1,5 @@
 import { type Event } from "~/lib/data";
-import { eventDay, eventLineup, eventTime, isMultiDay } from "~/lib/utils";
+import { eventLineup, eventPlace, eventTime } from "~/lib/utils";
 import { Link } from "react-router";
 import { zoneColor } from "./event-badges";
 import { BookmarkButton } from "./bookmark-button";
@@ -29,12 +29,7 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
             <ul className="text-muted-foreground text-sm">
               <li className="line-clamp-1">🎧 {lineup && lineup || "..."}</li>
               <li>⏰ {eventTime(event)}</li>
-              <li className="truncate">📍 {event.venue === event.location
-                ? `${event.venue}, ${event.zone}`
-                : event.zone !== event.location
-                  ? `${event.location}, ${event.zone}`
-                  : event.zone}
-              </li>
+              <li className="truncate">📍 {eventPlace(event)}</li>
             </ul>
           </div>
         </div>

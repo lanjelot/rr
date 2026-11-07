@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { Event } from "~/lib/data";
 import { cn, isMultiDay, raveWeekStart as weekStart } from "~/lib/utils";
 import { EventCompactCard } from "./event-compact-card";
-import { EventThumbnailCard } from "./event-thumbnail-card";
+import { EventGridCard } from "./event-grid-card";
 import { EventListDialog } from "./event-details-card";
 import { eventDayNumberer, isClosingDay } from "./event-badges";
 import { useUrlDialogParam } from "~/hooks/url-dialog";
@@ -252,7 +252,7 @@ function DayPage({ day, events, render, layout }: { day: string; events: Event[]
       {render && (layout === "grid" ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {events.map((event: Event) => (
-            <EventThumbnailCard key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
+            <EventGridCard key={event.id} event={event} onClick={() => show(dialogId(event, day))} />
           ))}
         </div>
       ) : events.map((event: Event) => (
