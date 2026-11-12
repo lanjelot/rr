@@ -20,20 +20,20 @@ export function EventThumbnailCard({ event, onClick }: { event: Event; onClick: 
       <button
         type="button"
         onClick={onClick}
-        className="w-full h-48 flex flex-col gap-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 hover:cursor-pointer rounded-xl overflow-hidden cursor-pointer text-left"
+        className="w-full h-48 flex flex-col bg-zinc-100 hover:bg-zinc-200 dark:bg-white/5 dark:hover:bg-white/10 dark:border dark:border-white/10 dark:hover:border-white/20 rounded-xl overflow-hidden cursor-pointer text-left"
       >
         <img
           src={event.preview}
           alt=""
           className="object-cover w-full h-24"
         />
-        <div className="w-full px-3 pb-1 flex-1 min-h-0 flex flex-col">
+        <div className="w-full px-3 py-2 flex-1 min-h-0 flex flex-col gap-0.5">
          <div className="text-sm text-muted-foreground truncate">{eventDate(event)}</div>
           <div className="font-medium line-clamp-2 leading-tight">{event.name}</div>
           <div className="mt-auto pr-6 text-sm truncate text-muted-foreground">{event.location}</div>
         </div>
       </button>
-      <BookmarkButton eventId={event.id} className="absolute bottom-1.5 right-2 text-muted-foreground" iconClassName="size-5" />
+      <BookmarkButton eventId={event.id} className="absolute bottom-2 right-2 text-muted-foreground" iconClassName="size-5" />
     </div>
   );
 }

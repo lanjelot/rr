@@ -2,14 +2,14 @@ import type { Event } from "~/lib/data";
 import { eventDate, eventLineup, eventTime, isHappeningNow } from "~/lib/utils";
 import { DateBadge, RegionBadge } from "./event-badges";
 import { EventActions } from "./event-details-card";
-import { EventGenres } from "./event-genres";
+import { GenreChips } from "./event-genres";
 
 
 export function EventLargeCard({ event }: { event: Event; }) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 border rounded-xl">
+      <div className="flex flex-col gap-1 border rounded-xl">
         <div className="relative overflow-hidden rounded-t-xl">
           {/* Blurred copy fills the letterbox around the contained flyer. */}
           <img
@@ -21,7 +21,7 @@ export function EventLargeCard({ event }: { event: Event; }) {
           <img
             src={event.preview}
             alt=""
-            className="relative h-80 w-full object-contain"
+            className="relative h-64 w-full object-contain"
           />
           <div className="absolute top-2 left-2">
             <DateBadge event={event} />
@@ -37,13 +37,11 @@ export function EventLargeCard({ event }: { event: Event; }) {
         </div>
 
         <div>
-          <div className="text-center text-lg font-medium px-3">{event.name}</div>
-          <div className="flex flex-col gap-6 p-3 text-sm text-muted-foreground">
+          <div className="text-center text-xl font-medium px-3">{event.name}</div>
+          <div className="p-3 text-sm text-muted-foreground">
             <ul>
               {eventLineup(event) && <li>🎧 {eventLineup(event)}</li>}
               {event.promoter && <li>🌀 {event.promoter}</li>}
-            </ul>
-            <ul>
               <li>📅 {eventDate(event)}</li>
               <li>⏰ {eventTime(event)}</li>
               <li>📍 {event.location}</li>
@@ -51,9 +49,8 @@ export function EventLargeCard({ event }: { event: Event; }) {
                 <li>🏛️ {event.venue}</li>
               )}
             </ul>
-            <ul>
-              <EventGenres event={event} />
-            </ul>
+            {/* The card has no fill, so the chips need their own shade on the page. */}
+            <GenreChips event={event} className="mt-2" chipClassName="bg-zinc-100" />
           </div>
         </div>
 

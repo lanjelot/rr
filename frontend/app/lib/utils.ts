@@ -91,6 +91,7 @@ export function eventTime(
 
   return `${formatTime(event.start_at, " (ddd)")} - ${formatTime(event.finish_at, " (ddd)")}`;
 }
+
 export function eventLineup(event: Event): string {
   return [event.artists, event.djs].filter(Boolean).join(", ");
 }

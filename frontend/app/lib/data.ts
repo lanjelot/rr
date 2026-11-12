@@ -66,6 +66,8 @@ export type Event = {
   genre?: string;
   // Parent genres from GENRES in ~/lib/genres.
   canonical_genres?: string[];
+  // Held at a nightclub, club or bar.
+  club?: boolean;
   ticket?: string;
   latitude: number | null;
   longitude: number | null;

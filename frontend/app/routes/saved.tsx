@@ -1,17 +1,18 @@
+import { BookmarkIcon, EqualsIcon, ListBulletIcon, MapIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import moment from "moment";
 import type { ShouldRevalidateFunctionArgs } from "react-router";
 import { useSearchParams } from "react-router";
-import { BookmarkIcon, ListBulletIcon, MapIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
-import moment from "moment";
-import type { Route } from "./+types/saved";
-import { fetchEvents, type Event } from "~/lib/data";
-import { isFutureEvent } from "~/lib/utils";
-import { useBookmarks } from "~/contexts/bookmarks-context";
-import { useUrlDialogParam } from "~/hooks/url-dialog";
 import { EventCompactCard } from "~/components/event-compact-card";
+import { EventListDialog } from "~/components/event-details-card";
 import { EventGridCard } from "~/components/event-grid-card";
+import { EventLargeCard } from "~/components/event-large-card";
 import { EventMap } from "~/components/event-map";
 import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { EventListDialog } from "~/components/event-details-card";
+import { useBookmarks } from "~/contexts/bookmarks-context";
+import { useUrlDialogParam } from "~/hooks/url-dialog";
+import { fetchEvents, type Event } from "~/lib/data";
+import { isFutureEvent } from "~/lib/utils";
+import type { Route } from "./+types/saved";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -20,7 +21,8 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-// Opening an event's dialog only changes the search params; don't refetch for it.
+// Opening an event's dialog only changes the search params; only refetch
+// when actually navigating to the page.
 export function shouldRevalidate({ currentUrl, nextUrl, defaultShouldRevalidate }: ShouldRevalidateFunctionArgs) {
   if (currentUrl.pathname === nextUrl.pathname) return false;
   return defaultShouldRevalidate;
@@ -44,10 +46,10 @@ function groupByDay(events: Event[]) {
   return [...byDay.entries()].map(([day, events]) => ({ day, events }));
 }
 
-type ViewMode = "list" | "grid" | "map";
+type ViewMode = "list" | "grid" | "large" | "map";
 
 function parseViewMode(value: string | null): ViewMode {
-  return value === "grid" || value === "map" ? value : "list";
+  return value === "grid" || value === "large" || value === "map" ? value : "list";
 }
 
 // Bookmarks are your own picks, so they ignore the region and genre filters.
@@ -104,6 +106,9 @@ export default function Saved({
         <ToggleGroupItem value="grid" aria-label="Grid view" title="Grid">
           <Squares2X2Icon />
         </ToggleGroupItem>
+        <ToggleGroupItem value="large" aria-label="Card view" title="Card">
+          <EqualsIcon />
+        </ToggleGroupItem>
         <ToggleGroupItem value="map" aria-label="Map view" title="Map">
           <MapIcon />
         </ToggleGroupItem>
@@ -122,6 +127,12 @@ export default function Saved({
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                   {events.map((event) => (
                     <EventGridCard key={event.id} event={event} onClick={() => show(event.id)} />
+                  ))}
+                </div>
+              ) : viewMode === "large" ? (
+                <div className="flex flex-col gap-6">
+                  {events.map((event) => (
+                    <EventLargeCard key={event.id} event={event} />
                   ))}
                 </div>
               ) : (

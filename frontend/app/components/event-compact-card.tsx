@@ -8,8 +8,7 @@ import { BookmarkButton } from "./bookmark-button";
 // Opening the details is left to the caller (the overview's EventListDialog), so
 // this is just the clickable card.
 export function EventCompactCard({ event, onClick }: { event: Event; onClick: () => void; }) {
-  const lineup = eventLineup(event);
-  // Listed under the location when there's no lineup. Plain text rather than badges
+  // const lineup = eventLineup(event);
   const genres = (event.canonical_genres ?? []).join(", ") || event.genre;
 
   return (
@@ -29,10 +28,10 @@ export function EventCompactCard({ event, onClick }: { event: Event; onClick: ()
               <span>{event.name}</span>
             </div>
             <ul className="text-muted-foreground text-sm">
-              {lineup && <li className="line-clamp-1">🎧 {lineup}</li>}
+              {/* {lineup && <li className="line-clamp-1">🎧 {lineup}</li>} */}
               <li>⏰ {eventTime(event)}</li>
               <li className="truncate">📍 {eventPlace(event)}</li>
-              {!lineup && genres && <li className="line-clamp-1">🎶 {genres}</li>}
+              {genres && <li className="line-clamp-1">🎶 {genres}</li>}
             </ul>
           </div>
         </div>

@@ -272,7 +272,7 @@ export function EventsOverview({
   layout?: OverviewLayout;
 }) {
   const { selectedRegions, excludedSubregions, inSelectedRegions } = useRegion();
-  const { selectedGenres, matchesSelectedGenres } = useGenres();
+  const { selectedGenres, hideClubs, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const openEvent = searchParams.get("event");
   const { isBookmarked } = useBookmarks();
@@ -348,7 +348,7 @@ export function EventsOverview({
     const i = initialIndex();
     setIndex(i);
     pagerRef.current?.scrollTo({ left: pageLeft(i), behavior: "instant" });
-  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), bookmarkedOnly]);
+  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), hideClubs, bookmarkedOnly]);
 
   // The pager is clipped to the current page's height so a short day doesn't
   // sit above a screen of blank space left by its taller neighbours.

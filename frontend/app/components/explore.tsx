@@ -2,8 +2,8 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useSearchParams } from "react-router";
 import moment from "moment";
 import {
-  Bars2Icon,
   ChevronDownIcon,
+  EqualsIcon,
   MagnifyingGlassIcon,
   MapIcon,
   MapPinIcon,
@@ -14,7 +14,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { REGIONS, inRegions, regionLabel, type Event } from "~/lib/data";
-import { GENRES, matchesGenres } from "~/lib/genres";
+import { GENRES, isClub, matchesGenres } from "~/lib/genres";
 import { cn, isFutureEvent, isMultiDay, raveWeekStart } from "~/lib/utils";
 import {
   buildSuggestionIndex,
@@ -39,6 +39,7 @@ import { EventThumbnailCard } from "./event-thumbnail-card";
 import { EventLargeCard } from "./event-large-card";
 import { EventListDialog } from "./event-details-card";
 import { EventMap } from "./event-map";
+import { EventGridCard } from "./event-grid-card";
 
 const DAY_FMT = "YYYY-MM-DD";
 // The hour a night's partying counts as over, as on Home.
@@ -249,7 +250,7 @@ function BrowseSection({ title, children }: { title: string; children: ReactNode
 
 export function Explore({ events }: { events: Event[] }) {
   const { selectedRegions } = useRegion();
-  const { selectedGenres } = useGenres();
+  const { selectedGenres, hideClubs } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const { show } = useUrlDialogParam("event");
   const location = useLocation();
@@ -297,9 +298,9 @@ export function Explore({ events }: { events: Event[] }) {
   const scope = useMemo(
     () =>
       events
-        .filter((event) => isFutureEvent(event) && inRegions(event, regions))
+        .filter((event) => isFutureEvent(event) && inRegions(event, regions) && !(hideClubs && isClub(event)))
         .sort((a, b) => moment(a.start_at).diff(moment(b.start_at))),
-    [events, regions.join(",")]
+    [events, regions.join(","), hideClubs]
   );
   // Everything the filters and chips let through, before the typed text.
   const filtered = useMemo(
@@ -536,7 +537,7 @@ export function Explore({ events }: { events: Event[] }) {
             <Squares2X2Icon />
           </ToggleGroupItem>
           <ToggleGroupItem value="list" aria-label="List view" title="List">
-            <Bars2Icon />
+            <EqualsIcon />
           </ToggleGroupItem>
           <ToggleGroupItem value="map" aria-label="Map view" title="Map">
             <MapIcon />
@@ -606,7 +607,7 @@ export function Explore({ events }: { events: Event[] }) {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {results.map((event) => (
-                <EventThumbnailCard key={event.id} event={event} onClick={() => show(event.id)} />
+                <EventGridCard key={event.id} event={event} onClick={() => show(event.id)} />
               ))}
             </div>
           )}

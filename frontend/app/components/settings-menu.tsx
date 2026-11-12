@@ -28,26 +28,30 @@ export function toggled(list: string[], item: string): string[] {
   return list.includes(item) ? list.filter((i) => i !== item) : [...list, item];
 }
 
-// A ticked row, so it reads as a multiple choice.
+// A ticked row, so it reads as a multiple choice. `trailing` puts the box on
+// the far right, for a standalone toggle.
 export function CheckboxButton({
   checked,
   onClick,
   className,
+  trailing = false,
   children,
 }: {
   checked: boolean;
   onClick: () => void;
   className?: string;
+  trailing?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Button
       variant="ghost"
-      className={cn("justify-start", className)}
+      className={cn(trailing ? "justify-between" : "justify-start", className)}
       role="checkbox"
       aria-checked={checked}
       onClick={onClick}
     >
+      {trailing && children}
       <span
         className={cn(
           "flex size-4 items-center justify-center rounded-[4px] border",
@@ -56,7 +60,7 @@ export function CheckboxButton({
       >
         {checked && <CheckIcon className="size-3 stroke-3" />}
       </span>
-      {children}
+      {!trailing && children}
     </Button>
   );
 }
@@ -277,13 +281,13 @@ function SubView({ title, onBack, children }: { title: string; onBack: () => voi
 // open as their own view, sliding in over the main one. Pages that don't filter
 // events leave them out.
 export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
-  const { selectedGenres } = useGenres();
+  const { selectedGenres, hideClubs, setHideClubs } = useGenres();
   const { selectedRegions } = useRegion();
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View>("main");
   // The main view only slides back in when coming back from a list, not on open.
   const [returned, setReturned] = useState(false);
-  const genreFilterOn = showFilters && selectedGenres.length > 0;
+  const genreFilterOn = showFilters && (selectedGenres.length > 0 || hideClubs);
 
   function back() {
     // A subregion list goes back to the region list it was opened from.
@@ -351,6 +355,9 @@ export function SettingsMenu({ showFilters }: { showFilters: boolean }) {
                   value={selectedGenres.length === 0 ? "All" : summary(selectedGenres)}
                   onClick={() => setView("genres")}
                 />
+                <CheckboxButton trailing checked={hideClubs} onClick={() => setHideClubs(!hideClubs)}>
+                  Hide nightclub events
+                </CheckboxButton>
                 <Separator orientation="horizontal" />
               </>
             )}

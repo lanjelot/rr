@@ -8,7 +8,6 @@ import { REGIONS, type Event } from "~/lib/data";
 import { isFutureEvent } from "~/lib/utils";
 import { useRegion } from "~/contexts/region-context";
 import { useGenres } from "~/contexts/genre-context";
-import { matchesGenres } from "~/lib/genres";
 import { Button } from "~/components/ui/button";
 import { useBookmarks } from "~/contexts/bookmarks-context";
 import { EventListDialog } from "./event-details-card";
@@ -315,7 +314,7 @@ function ShareDayButton({ day, regions }: { day: string; regions: string[] }) {
 
 export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; bookmarkedOnly: boolean; }) {
   const { selectedRegions, excludedSubregions, inSelectedRegions } = useRegion();
-  const { selectedGenres } = useGenres();
+  const { selectedGenres, hideClubs, matchesSelectedGenres } = useGenres();
   const [searchParams, setSearchParams] = useSearchParams();
   const { value: openDialogId, show } = useUrlDialogParam("event");
   const { isBookmarked } = useBookmarks();
@@ -326,14 +325,14 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
       events
         .filter((event) =>
           inSelectedRegions(event) &&
-          matchesGenres(event, selectedGenres) &&
+          matchesSelectedGenres(event) &&
           isFutureEvent(event) &&
           // Keep the open event while its dialog is up, so un-bookmarking it there
           // doesn't pull it out from under the dialog.
           (!bookmarkedOnly || isBookmarked(event.id) || openDialogId?.startsWith(`${event.id}-`))
         )
         .sort((a, b) => moment.parseZone(a.start_at).diff(moment.parseZone(b.start_at))),
-    [events, selectedRegions, excludedSubregions, selectedGenres, bookmarkedOnly, isBookmarked, openDialogId]
+    [events, selectedRegions, excludedSubregions, selectedGenres, hideClubs, bookmarkedOnly, isBookmarked, openDialogId]
   );
 
   // Use the same 10am cutoff so last night's show still shows in the early hours.
@@ -401,7 +400,7 @@ export function CalendarView({ events, bookmarkedOnly }: { events: Event[]; book
     const i = initialIndex();
     setIndex(i);
     if (dayGroups[i]) pendingScroll.current = { day: dayGroups[i].day, behavior: "instant" };
-  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), bookmarkedOnly]);
+  }, [selectedRegions.join(","), excludedSubregions.join(","), selectedGenres.join(","), hideClubs, bookmarkedOnly]);
 
   // Brings the day's card up under the stuck strip. A week's first day goes
   // back to the top of the page instead, so the controls above come back too.

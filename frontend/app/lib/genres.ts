@@ -24,6 +24,10 @@ export function matchesGenres(event: Event, selectedGenres: string[]): boolean {
   return selectedGenres.length === 0 || (event.canonical_genres ?? []).some((g) => selectedGenres.includes(g));
 }
 
+export function isClub(event: Event): boolean {
+  return event.club === true;
+}
+
 // The parent genres, else the flyer's genres for events without any.
 export function genreChips(event: Event): string[] {
   if (event.canonical_genres?.length) return event.canonical_genres;
