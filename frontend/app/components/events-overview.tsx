@@ -290,15 +290,36 @@ export function EventsOverview({
   const eventDay = eventDayNumberer(allGroups.flatMap(group => group.events.map(event => ({ event, day: group.day }))));
   // A day with nothing on but festivals winding up isn't worth a page.
   const shownGroups = allGroups.filter(group => !group.events.every(event => isClosingDay(eventDay(event, group.day))));
-  const weekLabel = weekLabeller(shownGroups);
-  const today = moment().format(DAY_FMT);
-  const groups = shownGroups.filter(group => group.day >= today);
+  const now = moment();
+  // Today (or `days` from it) where the event is. Day keys are in the event's
+  // own timezone, so "today" has to be too, not the viewer's.
+  const dayFor = (event: Event, days = 0) =>
+    now.clone().utcOffset(moment.parseZone(event.start_at).utcOffset()).add(days, "day").format(DAY_FMT);
+  const entryKey = (event: Event, day: string) => `${event.id} ${day}`;
+  // Each event on the days from its own today on.
+  const upcoming = new Set(shownGroups.flatMap(group =>
+    group.events.filter(event => group.day >= dayFor(event)).map(event => entryKey(event, group.day))
+  ));
+  // Last night's parties still going this morning keep yesterday as a page to
+  // swipe back to, with only those on it. Ones also listed today (festivals)
+  // are left to today's page.
+  const stillGoing = (event: Event, day: string) =>
+    day === dayFor(event, -1) && now.isBefore(moment(event.finish_at)) && !upcoming.has(entryKey(event, dayFor(event)));
+  const groups = allGroups
+    .map(group => ({
+      day: group.day,
+      events: group.events.filter(event => upcoming.has(entryKey(event, group.day)) || stillGoing(event, group.day)),
+    }))
+    .filter(group => group.events.length > 0);
+  const firstUpcoming = groups.findIndex(group => group.events.some(event => upcoming.has(entryKey(event, group.day))));
+  const weekLabel = weekLabeller([...shownGroups, ...groups]);
 
   // Every upcoming day's events in order, for the dialog to step through.
   const dialogEntries = groups.flatMap(group => group.events.map(event => ({ event, day: group.day })));
 
   // Start on the open event's day, else the day in the URL, else the day of a
-  // plain ?event=<id> link, else the first upcoming day.
+  // plain ?event=<id> link, else the first upcoming day (not yesterday's
+  // stragglers, which are one swipe back).
   const initialIndex = () => {
     const openDay = parseDialogId(openEvent)?.day;
     const byOpenDay = groups.findIndex(group => group.day === openDay);
@@ -306,7 +327,7 @@ export function EventsOverview({
     const byDay = groups.findIndex(group => group.day === searchParams.get("day"));
     if (byDay !== -1) return byDay;
     const byEvent = groups.findIndex(group => group.events.some(event => String(event.id) === openEvent));
-    return Math.max(byEvent, 0);
+    return byEvent !== -1 ? byEvent : Math.max(firstUpcoming, 0);
   };
 
   // Edits the live URL rather than setSearchParams' updater argument, which is
