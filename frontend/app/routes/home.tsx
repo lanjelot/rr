@@ -6,8 +6,8 @@ import { EventsOverview } from "~/components/events-overview";
 import { CalendarView } from "~/components/calendar-view";
 import { Button } from "~/components/ui/button";
 import { Toggle } from "~/components/ui/toggle";
-import { ToggleGroup, ToggleGroupItem } from "~/components/ui/toggle-group";
-import { BookmarkIcon, CalendarIcon, ListBulletIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
+import { Popover, PopoverContent, PopoverTrigger } from "~/components/ui/popover";
+import { BookmarkIcon, CalendarIcon, CheckIcon, ChevronDownIcon, ListBulletIcon, Squares2X2Icon } from "@heroicons/react/24/outline";
 import { BookmarkIcon as BookmarkSolidIcon } from "@heroicons/react/24/solid";
 import { useState } from "react";
 
@@ -36,6 +36,12 @@ export async function clientLoader({
 
 type ViewMode = "days" | "grid" | "calendar";
 
+const VIEW_MODES: { value: ViewMode; label: string; Icon: typeof ListBulletIcon }[] = [
+  { value: "days", label: "List", Icon: ListBulletIcon },
+  { value: "grid", label: "Grid", Icon: Squares2X2Icon },
+  { value: "calendar", label: "Calendar", Icon: CalendarIcon },
+];
+
 function parseViewMode(value: string | null): ViewMode {
   return value === "grid" || value === "calendar" ? value : "days";
 }
@@ -47,6 +53,8 @@ export default function Home({
   const [searchParams, setSearchParams] = useSearchParams();
   const viewMode: ViewMode = parseViewMode(searchParams.get("view"));
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  const [viewMenuOpen, setViewMenuOpen] = useState(false);
+  const current = VIEW_MODES.find((m) => m.value === viewMode)!;
 
   // All views share ?day=, so switching opens on the same day.
   function setViewMode(mode: ViewMode) {
@@ -62,14 +70,6 @@ export default function Home({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
-        {viewMode === "calendar" && (
-          <Button variant="outline" size="sm" asChild>
-            <a href={GOOGLE_CALENDAR_SUBSCRIBE} target="_blank" rel="noopener noreferrer">
-              <img src="/raveroster/google-calendar.svg" alt="" className="size-4" />
-              Subscribe in Google Calendar
-            </a>
-          </Button>
-        )}
         <Toggle
           variant="outline"
           className="ms-auto"
@@ -80,22 +80,30 @@ export default function Home({
         >
           {bookmarkedOnly ? <BookmarkSolidIcon /> : <BookmarkIcon />}
         </Toggle>
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          value={viewMode}
-          onValueChange={(value) => value && setViewMode(value as ViewMode)}
-        >
-          <ToggleGroupItem value="days" aria-label="Compact" title="Compact">
-            <ListBulletIcon />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="grid" aria-label="Grid" title="Grid">
-            <Squares2X2Icon />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="calendar" aria-label="Calendar" title="Calendar">
-            <CalendarIcon />
-          </ToggleGroupItem>
-        </ToggleGroup>
+        <Popover open={viewMenuOpen} onOpenChange={setViewMenuOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" title="View">
+              <current.Icon /> {current.label}
+              <ChevronDownIcon className="text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-40 p-1 gap-1">
+            {VIEW_MODES.map(({ value, label, Icon }) => (
+              <Button
+                key={value}
+                variant="ghost"
+                className="justify-start"
+                onClick={() => {
+                  setViewMode(value);
+                  setViewMenuOpen(false);
+                }}
+              >
+                <Icon /> {label}
+                {value === viewMode && <CheckIcon className="ms-auto" />}
+              </Button>
+            ))}
+          </PopoverContent>
+        </Popover>
       </div>
 
       {viewMode === "calendar"
