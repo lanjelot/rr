@@ -5,7 +5,7 @@ import { useUrlDialog, useUrlDialogParam } from "~/hooks/url-dialog";
 import { DateBadge, RegionBadge, type EventDay } from "./event-badges";
 import { Button } from "./ui/button";
 import { Dialog, DialogClose, DialogContent, DialogPortal, DialogTitle, DialogTrigger } from "./ui/dialog";
-import { ArrowTopRightOnSquareIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, ShareIcon, XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowTopRightOnSquareIcon, CheckIcon, ChevronLeftIcon, ChevronRightIcon, MapPinIcon, ShareIcon, XCircleIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import { BookmarkButton } from "./bookmark-button";
 import { EventGenres } from "./event-genres";
 
@@ -254,15 +254,33 @@ export function EventDetailsCard({ event, eventDay, children }: { event: Event; 
   );
 }
 
+// Google's cross-platform Maps URL: opens the Maps app on phones and the site on
+// desktop, no API key needed. Searching for the venue by name, rather than its
+// coordinates, lands on the venue's own listing (hours, photos, directions)
+// instead of a bare pin. "Australia" keeps the state abbreviations from matching
+// elsewhere (WA as Washington, for one). Without a venue, search the location.
+function googleMapsUrl(event: Event) {
+  const query = [event.venue || event.location, event.state, "Australia"].filter(Boolean).join(", ");
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
 // Get Tickets, share and bookmark, along the bottom of an event card.
 export function EventActions({ event, className }: { event: Event; className?: string }) {
   return (
-    <div className={cn("flex items-center gap-5 text-muted-foreground", className)}>
+    <div className={cn("flex items-center gap-3 text-muted-foreground", className)}>
       {event.ticket && (
         <Button asChild variant="blue" className="flex-1">
           <a href={event.ticket} target="_blank" rel="noopener noreferrer">
             Get Tickets
             <ArrowTopRightOnSquareIcon />
+          </a>
+        </Button>
+      )}
+      {event.location && (
+        <Button asChild variant="outline-green">
+          <a href={googleMapsUrl(event)} target="_blank" rel="noopener noreferrer">
+            Map
+            <MapPinIcon />
           </a>
         </Button>
       )}
