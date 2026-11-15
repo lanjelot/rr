@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useLocation, useSearchParams } from "react-router";
 import moment from "moment";
 import {
+  CheckIcon,
   ChevronDownIcon,
   EqualsIcon,
   MagnifyingGlassIcon,
@@ -32,7 +33,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Separator } from "./ui/separator";
-import { ToggleGroup, ToggleGroupItem } from "./ui/toggle-group";
 import { CheckboxButton, toggled } from "./settings-menu";
 import { SearchChip } from "./search-chip";
 import { EventThumbnailCard } from "./event-thumbnail-card";
@@ -60,6 +60,22 @@ type ViewMode = "grid" | "list" | "map";
 
 function parseViewMode(value: string | null): ViewMode {
   return value === "list" || value === "map" ? value : "grid";
+}
+
+const VIEW_STORAGE_KEY = "exploreView";
+
+function loadViewMode(): string | null {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveViewMode(mode: ViewMode) {
+  try {
+    localStorage.setItem(VIEW_STORAGE_KEY, mode);
+  } catch {}
 }
 
 // Dates are picked by rave week (Tuesday to Monday), the way Home groups them.
@@ -181,6 +197,45 @@ function FilterButton({
   );
 }
 
+const VIEW_MODES: { value: ViewMode; label: string; Icon: typeof MapIcon }[] = [
+  { value: "grid", label: "Grid", Icon: Squares2X2Icon },
+  { value: "list", label: "List", Icon: EqualsIcon },
+  { value: "map", label: "Map", Icon: MapIcon },
+];
+
+// Picks the results layout.
+function ViewMenu({ value, onChange }: { value: ViewMode; onChange: (value: ViewMode) => void }) {
+  const [open, setOpen] = useState(false);
+  const current = VIEW_MODES.find((m) => m.value === value)!;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" className="shrink-0" title="View">
+          <current.Icon /> {current.label}
+          <ChevronDownIcon className="text-muted-foreground" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-36 p-1 gap-1">
+        {VIEW_MODES.map(({ value: mode, label, Icon }) => (
+          <Button
+            key={mode}
+            variant="ghost"
+            className="justify-start"
+            onClick={() => {
+              onChange(mode);
+              setOpen(false);
+            }}
+          >
+            <Icon /> {label}
+            {mode === value && <CheckIcon className="ms-auto" />}
+          </Button>
+        ))}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 // Resetting goes back to the settings menu's defaults; "All" widens past them.
 function ListFooter({ onDefaults, onAll, onClose }: { onDefaults?: () => void; onAll?: () => void; onClose: () => void }) {
   return (
@@ -260,7 +315,7 @@ export function Explore({ events }: { events: Event[] }) {
   // The text being typed. It narrows the results as you type, and becomes an
   // "Any" chip once searched for.
   const [query, setQuery] = useState("");
-  const viewMode = parseViewMode(searchParams.get("view"));
+  const viewMode = parseViewMode(searchParams.get("view") ?? loadViewMode());
   const when = parseWhen(searchParams.get("when"));
   // Searches picked from the suggestions (or shared links), e.g.
   // ?q=techno&artist=nina&place=brunswick. Every one has to match.
@@ -523,26 +578,16 @@ export function Explore({ events }: { events: Event[] }) {
 
         </div>
 
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          className="shrink-0"
+        <ViewMenu
           value={viewMode}
-          onValueChange={(value) => value && update((params) => {
-            if (value === "grid") params.delete("view");
-            else params.set("view", value);
-          }, true)}
-        >
-          <ToggleGroupItem value="grid" aria-label="Grid view" title="Grid">
-            <Squares2X2Icon />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="list" aria-label="List view" title="List">
-            <EqualsIcon />
-          </ToggleGroupItem>
-          <ToggleGroupItem value="map" aria-label="Map view" title="Map">
-            <MapIcon />
-          </ToggleGroupItem>
-        </ToggleGroup>
+          onChange={(mode) => {
+            saveViewMode(mode);
+            update((params) => {
+              if (mode === "grid") params.delete("view");
+              else params.set("view", mode);
+            }, true);
+          }}
+        />
       </div>
 
       {chips.length > 0 && (

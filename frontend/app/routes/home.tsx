@@ -46,18 +46,36 @@ function parseViewMode(value: string | null): ViewMode {
   return value === "grid" || value === "calendar" ? value : "days";
 }
 
+const VIEW_STORAGE_KEY = "homeView";
+
+function loadViewMode(): string | null {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function saveViewMode(mode: ViewMode) {
+  try {
+    localStorage.setItem(VIEW_STORAGE_KEY, mode);
+  } catch {}
+}
+
 export default function Home({
   loaderData,
 }: Route.ComponentProps) {
   const { events } = loaderData;
   const [searchParams, setSearchParams] = useSearchParams();
-  const viewMode: ViewMode = parseViewMode(searchParams.get("view"));
+  const viewMode: ViewMode = parseViewMode(searchParams.get("view") ?? loadViewMode());
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   const [viewMenuOpen, setViewMenuOpen] = useState(false);
   const current = VIEW_MODES.find((m) => m.value === viewMode)!;
 
+  // ?view= wins; without it, open on the view last picked here.
   // All views share ?day=, so switching opens on the same day.
   function setViewMode(mode: ViewMode) {
+    saveViewMode(mode);
     setSearchParams((prev) => {
       const params = new URLSearchParams(prev);
       if (mode !== "days") params.set("view", mode);
